@@ -12,7 +12,7 @@ import {
 describe("question compiler session rules", () => {
   test("raw question needs at least five non-whitespace characters", () => {
     expect(isRawQuestionReady("   ")).toBe(false);
-    expect(isRawQuestionReady("四个字啊")).toBe(true);
+    expect(isRawQuestionReady("五个字啊呀")).toBe(true);
     expect(isRawQuestionReady("  现在转码还有前途吗？  ")).toBe(true);
   });
 
