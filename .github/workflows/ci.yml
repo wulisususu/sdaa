@@ -9,6 +9,9 @@ on:
     branches:
       - main
 
+permissions:
+  contents: write
+
 jobs:
   verify:
     runs-on: ubuntu-latest
@@ -33,3 +36,17 @@ jobs:
 
       - name: Build Web
         run: pnpm --filter web build
+
+  cleanup-feature-branch:
+    if: github.ref == 'refs/heads/main'
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete merged feature branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git init cleanup
+          cd cleanup
+          git remote add origin https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git
+          git push origin --delete feat/frontend-foundation || true
