@@ -52,8 +52,16 @@ export function CoverageStage({
       {error && <p className="pipeline-error" role="alert">{error}</p>}
       <div className="stage-action-bar detached-actions">
         <button className="secondary-button" type="button" onClick={onBack}>返回问题体检</button>
-        <button className="primary-button" type="button" onClick={onContinue} disabled={loading}>
-          {loading ? "正在把信息编译成一个更清楚的问题…" : "编译我的问题"}
+        <button
+          className="primary-button"
+          type="button"
+          onClick={onContinue}
+          disabled={loading}
+          aria-busy={loading}
+        >
+          {loading
+            ? <><span className="button-spinner" aria-hidden="true" />正在把信息编译成一个更清楚的问题…</>
+            : <>编译我的问题 <span aria-hidden="true">→</span></>}
         </button>
       </div>
     </section>
