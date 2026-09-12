@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "turbo dev",
     "build": "turbo build",
+    "start": "pnpm --filter web start",
     "test": "turbo test",
     "typecheck": "turbo typecheck",
     "smoke:test": "node --test scripts/smoke/pipeline.test.mjs",
