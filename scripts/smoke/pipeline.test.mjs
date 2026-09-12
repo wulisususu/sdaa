@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { runPipelineSmoke } from "./pipeline.mjs";
+import { parseQuestionArgs, runPipelineSmoke } from "./pipeline.mjs";
 
 test("runs analyze -> retrieve -> compile and answers clarifications from returned options", async () => {
   const calls = [];
@@ -85,4 +85,18 @@ test("throws a safe message when an API response is not ok", async () => {
     () => runPipelineSmoke("https://demo.example.com", "现在转码还有前途吗？", fakeFetch),
     /AI_NOT_CONFIGURED: AI 服务暂未配置/
   );
+});
+
+test("drops the argument separator that pnpm forwards to the script", () => {
+  assert.equal(parseQuestionArgs(["--", "现在转码还有前途吗？"]), "现在转码还有前途吗？");
+});
+
+test("joins multiple argument words and trims the result", () => {
+  assert.equal(parseQuestionArgs(["考研", "还是直接就业？"]), "考研 还是直接就业？");
+  assert.equal(parseQuestionArgs(["  问题内容在这里  "]), "问题内容在这里");
+});
+
+test("yields an empty question when only the separator is supplied", () => {
+  assert.equal(parseQuestionArgs([]), "");
+  assert.equal(parseQuestionArgs(["--"]), "");
 });
