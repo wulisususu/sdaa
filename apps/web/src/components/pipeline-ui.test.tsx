@@ -131,6 +131,23 @@ describe("real pipeline UI", () => {
     expect(html).toContain('target="_blank"');
   });
 
+  test("coverage stage exposes real compile loading feedback", () => {
+    const html = renderToStaticMarkup(
+      <CoverageStage
+        coverage={[]}
+        gaps={[]}
+        evidence={evidence}
+        status="success"
+        loading
+        onBack={() => undefined}
+        onContinue={() => undefined}
+      />
+    );
+    expect(html).toContain("button-spinner");
+    expect(html).toContain('aria-busy="true"');
+    expect(html).toContain("正在把信息编译成一个更清楚的问题…");
+  });
+
   test("coverage stage never calls empty evidence a Zhihu search result", () => {
     const html = renderToStaticMarkup(
       <CoverageStage
