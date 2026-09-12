@@ -21,6 +21,13 @@ function buildClarificationAnswers(analysis) {
   );
 }
 
+export function parseQuestionArgs(argv) {
+  const args = [...argv];
+  // pnpm/npm forward the "--" separator to the script; it must not become part of the question.
+  if (args[0] === "--") args.shift();
+  return args.join(" ").trim();
+}
+
 export async function runPipelineSmoke(baseUrl, rawQuestion, fetchImpl = fetch) {
   const base = baseUrl.replace(/\/$/, "");
   const analyze = await postJson(fetchImpl, `${base}/api/question/analyze`, { rawQuestion });
@@ -41,7 +48,7 @@ export async function runPipelineSmoke(baseUrl, rawQuestion, fetchImpl = fetch) 
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   const baseUrl = process.env.SMOKE_BASE_URL;
-  const rawQuestion = process.argv.slice(2).join(" ").trim();
+  const rawQuestion = parseQuestionArgs(process.argv.slice(2));
   if (!baseUrl || rawQuestion.length < 5) {
     console.error("Usage: SMOKE_BASE_URL=https://your-project.vercel.app pnpm smoke:production -- \"现在转码还有前途吗？\"");
     process.exit(2);
