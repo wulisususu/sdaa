@@ -39,6 +39,11 @@ function isTimeoutError(error: unknown): boolean {
   return error instanceof Error && (error.name === "AbortError" || error.name === "TimeoutError");
 }
 
+// 实测：deepseek-v4-flash 是推理模型，对 10-12 条真实知乎证据（约 1.5 万字符）做覆盖分析需要
+// 16.5-20+ 秒。原来的 20 秒预算会稳定打掉约三分之一的请求，使 Coverage / Gap 整段不可用。
+// 放宽预算不改变错误语义：超时仍然映射为可重试的 AI_TIMEOUT。
+export const LLM_TIMEOUT_MS = 45_000;
+
 const JSON_RESPONSE_RULE =
   "只返回一个合法的 json 对象作为最终答案：不要输出 Markdown 代码块、解释性文字或任何前后缀。";
 
@@ -81,7 +86,7 @@ export async function generateStructured<T>(
       system: buildJsonSystemPrompt(system, schema),
       prompt,
       output: Output.object({ schema }),
-      abortSignal: AbortSignal.timeout(20_000)
+      abortSignal: AbortSignal.timeout(LLM_TIMEOUT_MS)
     });
 
     return schema.parse(output);

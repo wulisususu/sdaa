@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { z } from "zod";
-import { buildJsonSystemPrompt, readLLMConfig } from "./provider";
+import { buildJsonSystemPrompt, LLM_TIMEOUT_MS, readLLMConfig } from "./provider";
 
 describe("LLM provider configuration", () => {
   test("fails safely when required configuration is missing", () => {
@@ -61,5 +61,13 @@ describe("JSON response prompt guard", () => {
 
     expect(system).toContain("你是问题分析器。");
     expect(system.toLowerCase()).toContain("json");
+  });
+});
+
+describe("LLM timeout budget", () => {
+  // 实测：deepseek-v4-flash 对 10-12 条真实知乎证据（约 1.5 万字符）做覆盖分析需要 16.5-20+ 秒，
+  // 原来的 20 秒预算会稳定打掉约三分之一的请求，使 Coverage / Gap 整段不可用。
+  test("leaves enough headroom for reasoning-model structured output", () => {
+    expect(LLM_TIMEOUT_MS).toBeGreaterThanOrEqual(40000);
   });
 });
