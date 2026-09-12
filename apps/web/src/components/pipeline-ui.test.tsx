@@ -67,6 +67,15 @@ describe("real pipeline UI", () => {
     expect(html).toContain('aria-current="step"');
   });
 
+  test("stepper exposes compact mobile progress instead of relying on compressed desktop labels", () => {
+    const html = renderToStaticMarkup(
+      <StageStepper stage="diagnose" maxVisited="diagnose" />
+    );
+    expect(html).toContain("mobile-stage-progress");
+    expect(html).toContain("3 / 5");
+    expect(html).toContain("问题体检");
+  });
+
   test("clarification selection has a non-color check indicator", () => {
     const html = renderToStaticMarkup(
       <ClarificationStage
