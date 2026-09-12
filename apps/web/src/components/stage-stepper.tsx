@@ -59,6 +59,74 @@ export function StageStepper({ stage, maxVisited, onChange }: StageStepperProps)
           );
         })}
       </nav>
+
+      <style>{`
+        .mobile-stage-progress {
+          display: none;
+        }
+
+        @media (max-width: 767px) {
+          .desktop-stage-stepper {
+            display: none;
+          }
+
+          .mobile-stage-progress {
+            display: grid;
+            gap: 10px;
+            margin-bottom: 14px;
+            padding: 12px 13px;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.9);
+            box-shadow: var(--shadow-sm);
+            backdrop-filter: blur(12px);
+          }
+
+          .mobile-stage-progress-copy {
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            align-items: baseline;
+            gap: 8px;
+          }
+
+          .mobile-stage-progress-copy > span {
+            color: var(--accent);
+            font-size: 11px;
+            font-weight: 800;
+          }
+
+          .mobile-stage-progress-copy > strong {
+            color: var(--text-primary);
+            font-size: 13px;
+          }
+
+          .mobile-stage-progress-copy > small {
+            color: var(--text-tertiary);
+            font-size: 9px;
+          }
+
+          .mobile-stage-progress-track {
+            height: 4px;
+            overflow: hidden;
+            border-radius: 999px;
+            background: var(--surface-muted);
+          }
+
+          .mobile-stage-progress-track > span {
+            display: block;
+            height: 100%;
+            border-radius: inherit;
+            background: linear-gradient(90deg, var(--accent), #7c6ff2);
+            transition: width var(--transition-ui);
+          }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .mobile-stage-progress-track > span {
+            transition: none;
+          }
+        }
+      `}</style>
     </>
   );
 }
