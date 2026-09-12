@@ -4,11 +4,21 @@ interface DiagnosisStageProps {
   rawQuestion: string;
   intent: string[];
   diagnostics: QuestionDiagnostic[];
+  loading?: boolean;
+  error?: string | null;
   onBack: () => void;
   onContinue: () => void;
 }
 
-export function DiagnosisStage({ rawQuestion, intent, diagnostics, onBack, onContinue }: DiagnosisStageProps) {
+export function DiagnosisStage({
+  rawQuestion,
+  intent,
+  diagnostics,
+  loading = false,
+  error = null,
+  onBack,
+  onContinue
+}: DiagnosisStageProps) {
   return (
     <section className="flow-stage flow-stage-wide">
       <div className="diagnosis-layout">
@@ -45,9 +55,12 @@ export function DiagnosisStage({ rawQuestion, intent, diagnostics, onBack, onCon
           </div>
         </div>
       </div>
+      {error && <p className="pipeline-error" role="alert">{error}</p>}
       <div className="stage-action-bar detached-actions">
         <button className="secondary-button" type="button" onClick={onBack}>返回补充信息</button>
-        <button className="primary-button" type="button" onClick={onContinue}>查看知乎已有讨论</button>
+        <button className="primary-button" type="button" onClick={onContinue} disabled={loading}>
+          {loading ? "正在知乎已有讨论中查找相关内容…" : "查看知乎已有讨论"}
+        </button>
       </div>
     </section>
   );

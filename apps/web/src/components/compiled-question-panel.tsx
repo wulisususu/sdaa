@@ -2,6 +2,7 @@ import type { CompiledQuestion } from "@ask-better/domain";
 
 interface CompiledQuestionPanelProps {
   question: CompiledQuestion;
+  evidenceUsed?: boolean;
   copyStatus?: "idle" | "copied" | "error";
   onCopy?: () => void;
   onReoptimize?: () => void;
@@ -10,6 +11,7 @@ interface CompiledQuestionPanelProps {
 
 export function CompiledQuestionPanel({
   question,
+  evidenceUsed = false,
   copyStatus = "idle",
   onCopy,
   onReoptimize,
@@ -21,7 +23,9 @@ export function CompiledQuestionPanel({
     <section className="workspace-panel compiled-panel">
       <div className="panel-heading">
         <div><h2>编译结果</h2><span>Compiled</span></div>
-        <span className="panel-badge panel-badge-success">可继续编辑</span>
+        <span className="panel-badge panel-badge-success">
+          {evidenceUsed ? "已参考检索证据" : "仅用户上下文"}
+        </span>
       </div>
       <div className="panel-content">
         <article className="compiled-card">

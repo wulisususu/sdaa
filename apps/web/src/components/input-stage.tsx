@@ -1,6 +1,8 @@
 interface InputStageProps {
   rawQuestion: string;
   ready: boolean;
+  loading?: boolean;
+  error?: string | null;
   onChange: (value: string) => void;
   onContinue: () => void;
 }
@@ -11,7 +13,14 @@ const examples = [
   "AI 应用开发应该怎么学？"
 ];
 
-export function InputStage({ rawQuestion, ready, onChange, onContinue }: InputStageProps) {
+export function InputStage({
+  rawQuestion,
+  ready,
+  loading = false,
+  error = null,
+  onChange,
+  onContinue
+}: InputStageProps) {
   return (
     <section className="flow-stage flow-stage-narrow">
       <div className="flow-card input-stage-card">
@@ -34,6 +43,7 @@ export function InputStage({ rawQuestion, ready, onChange, onContinue }: InputSt
           <span>{rawQuestion.trim().length} / 1000</span>
           {!ready && rawQuestion.length > 0 && <span className="input-warning">至少输入 5 个字</span>}
         </div>
+        {error && <p className="pipeline-error" role="alert">{error}</p>}
         <div className="example-block">
           <span className="example-label">试试这些问题</span>
           <div className="example-list">
@@ -44,8 +54,13 @@ export function InputStage({ rawQuestion, ready, onChange, onContinue }: InputSt
             ))}
           </div>
         </div>
-        <button className="primary-button stage-primary-action" type="button" onClick={onContinue} disabled={!ready}>
-          开始整理问题
+        <button
+          className="primary-button stage-primary-action"
+          type="button"
+          onClick={onContinue}
+          disabled={!ready || loading}
+        >
+          {loading ? "正在理解你的问题…" : "开始整理问题"}
         </button>
       </div>
     </section>

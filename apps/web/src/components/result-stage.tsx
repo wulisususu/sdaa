@@ -4,6 +4,8 @@ import { CompiledQuestionPanel } from "./compiled-question-panel";
 interface ResultStageProps {
   rawQuestion: string;
   question: CompiledQuestion;
+  evidenceUsed: boolean;
+  warnings?: string[];
   copyStatus: "idle" | "copied" | "error";
   onCopy: () => void;
   onReoptimize: () => void;
@@ -14,6 +16,8 @@ interface ResultStageProps {
 export function ResultStage({
   rawQuestion,
   question,
+  evidenceUsed,
+  warnings = [],
   copyStatus,
   onCopy,
   onReoptimize,
@@ -26,6 +30,16 @@ export function ResultStage({
         <span className="result-check">✓</span>
         <div><strong>问题已经整理完成</strong><small>Question Compiled</small></div>
       </div>
+      <p className="result-evidence-note">
+        {evidenceUsed
+          ? "编译时已参考本次知乎检索证据，用于判断已有覆盖与知识缺口。"
+          : "本次编译未使用知乎检索证据，结果仅基于你提供的问题与补充条件。"}
+      </p>
+      {warnings.length > 0 && (
+        <div className="result-warning-list" role="status">
+          {warnings.map((warning) => <p key={warning}>{warning}</p>)}
+        </div>
+      )}
       <div className="before-after-grid">
         <article className="before-card">
           <div className="flow-heading">
@@ -35,6 +49,7 @@ export function ResultStage({
         </article>
         <CompiledQuestionPanel
           question={question}
+          evidenceUsed={evidenceUsed}
           copyStatus={copyStatus}
           onCopy={onCopy}
           onReoptimize={onReoptimize}
