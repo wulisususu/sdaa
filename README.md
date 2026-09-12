@@ -16,6 +16,35 @@
 
 生产 UI 不再使用 Mock 数据作为成功回退。没有配置外部服务、知乎额度受限或上游暂时不可用时，界面会明确显示错误或 partial / unavailable 状态，而不是伪造“已有讨论”。
 
+## 公网体验
+
+Production: `https://ask.wulisu.icu`
+
+当前 P0 部署在 Linux 自托管环境（Ubuntu 24.04），而不是 Vercel：
+
+- Web / API：Next.js 16 由 systemd 托管，只监听 `127.0.0.1:3100`，不直接暴露公网
+- 反向代理：Nginx 终止 HTTPS（certbot 证书），对外只开放 80/443
+- LLM：DeepSeek `deepseek-v4-flash`（`https://api.deepseek.com`）
+- 检索：知乎官方开放平台 `zhihu_search`
+- 生产 Secret 只存在于服务器 `/etc/ask-better/ask-better.env`（权限 600），不进入仓库、前端 Bundle、日志或接口响应
+
+当知乎上游返回 `30001 rate limit exceeded` 时，Retrieve 进入 `quota_limited`，只保留已经取得的真实 Evidence，不会回退到演示数据。
+
+### Production Smoke
+
+Smoke Harness 只调用公网 `/api/question/*`，不读取任何 Secret：
+
+```bash
+SMOKE_BASE_URL=https://ask.wulisu.icu pnpm smoke:production -- "现在转码还有前途吗？"
+```
+
+PowerShell：
+
+```powershell
+$env:SMOKE_BASE_URL = "https://ask.wulisu.icu"
+pnpm smoke:production -- "现在转码还有前途吗？"
+```
+
 ## 服务端集成
 
 ### 1. OpenAI-compatible LLM
