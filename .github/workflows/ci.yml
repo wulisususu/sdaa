@@ -31,5 +31,8 @@ jobs:
       - name: Test shared domain
         run: pnpm --filter @ask-better/domain test
 
+      - name: Test Web services
+        run: pnpm --filter web test
+
       - name: Build Web
         run: pnpm --filter web build
