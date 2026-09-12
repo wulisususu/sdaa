@@ -22,43 +22,50 @@ export function ClarificationStage({
       <div className="flow-card">
         <div className="flow-heading flow-heading-split">
           <div>
-            <span className="section-kicker">补充信息</span>
-            <h2>还差 {questions.length} 个关键条件</h2>
-            <small>Clarify</small>
+            <span className="section-kicker">补充关键信息</span>
+            <h2>把真正会影响答案的条件补完整</h2>
+            <small>Clarification Pass</small>
           </div>
           <span className="answer-progress">已回答 {answeredCount} / {questions.length}</span>
         </div>
-        <p className="stage-lead">只补充真正会影响答案的条件，不确定的可以跳过。</p>
+        <p className="stage-lead">只问高信息增益的问题。不确定的可以跳过，系统不会把未提供的信息当成你的真实背景。</p>
         <div className="clarification-grid">
-          {questions.map((item, index) => (
-            <article className="clarification-card" key={item.id}>
-              <div className="clarification-number">{index + 1}</div>
-              <div className="clarification-content">
-                <h3>{item.question}</h3>
-                {item.helper && <p>{item.helper}</p>}
-                <div className="option-list">
-                  {item.options.map((option) => {
-                    const selected = answers[item.id] === option;
-                    return (
-                      <button
-                        type="button"
-                        key={option}
-                        className={`option-button ${selected ? "is-selected" : ""}`}
-                        aria-pressed={selected}
-                        onClick={() => onAnswer(item.id, option)}
-                      >
-                        {option}
-                      </button>
-                    );
-                  })}
+          {questions.map((item, index) => {
+            const answered = Boolean(answers[item.id]);
+            return (
+              <article className={`clarification-card ${answered ? "is-answered" : ""}`} key={item.id}>
+                <div className="clarification-number" aria-hidden="true">{answered ? "✓" : index + 1}</div>
+                <div className="clarification-content">
+                  <div className="clarification-title-row">
+                    <h3>{item.question}</h3>
+                    {answered && <span className="answered-label">已补充</span>}
+                  </div>
+                  {item.helper && <p>{item.helper}</p>}
+                  <div className="option-list">
+                    {item.options.map((option) => {
+                      const selected = answers[item.id] === option;
+                      return (
+                        <button
+                          type="button"
+                          key={option}
+                          className={`option-button ${selected ? "is-selected" : ""}`}
+                          aria-pressed={selected}
+                          onClick={() => onAnswer(item.id, option)}
+                        >
+                          <span className="option-check" aria-hidden="true">{selected ? "✓" : ""}</span>
+                          <span>{option}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            </article>
-          ))}
+              </article>
+            );
+          })}
         </div>
         <div className="stage-action-bar">
           <button className="secondary-button" type="button" onClick={onBack}>返回修改问题</button>
-          <button className="primary-button" type="button" onClick={onContinue}>继续体检</button>
+          <button className="primary-button" type="button" onClick={onContinue}>继续问题体检 <span aria-hidden="true">→</span></button>
         </div>
       </div>
     </section>

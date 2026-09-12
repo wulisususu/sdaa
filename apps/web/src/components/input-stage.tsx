@@ -24,18 +24,22 @@ export function InputStage({
   return (
     <section className="flow-stage flow-stage-narrow">
       <div className="flow-card input-stage-card">
-        <div className="flow-heading">
+        <div className="flow-heading input-hero-heading">
           <div>
-            <span className="section-kicker">原始问题</span>
+            <span className="section-kicker">知乎 AI 提问编译器</span>
             <h2>你真正想问什么？</h2>
-            <small>Raw Question</small>
+            <p className="stage-lead">
+              不需要先组织好语言。把困惑原样写下来，我们会先识别意图、补齐关键条件，再判断知乎已有讨论覆盖了什么。
+            </p>
           </div>
+          <span className="compiler-state-pill">Question Input</span>
         </div>
+        <label className="sr-only" htmlFor="flow-question">你想整理的问题</label>
         <textarea
           id="flow-question"
           value={rawQuestion}
           onChange={(event) => onChange(event.target.value)}
-          placeholder="随便说，我们帮你理清。"
+          placeholder="例如：现在转码还有前途吗？"
           rows={7}
           autoFocus
         />
@@ -45,7 +49,7 @@ export function InputStage({
         </div>
         {error && <p className="pipeline-error" role="alert">{error}</p>}
         <div className="example-block">
-          <span className="example-label">试试这些问题</span>
+          <span className="example-label">不知道怎么开始？试试这些问题</span>
           <div className="example-list">
             {examples.map((example) => (
               <button key={example} type="button" className="example-chip" onClick={() => onChange(example)}>
@@ -59,9 +63,14 @@ export function InputStage({
           type="button"
           onClick={onContinue}
           disabled={!ready || loading}
+          aria-busy={loading}
         >
-          {loading ? "正在理解你的问题…" : "开始整理问题"}
+          {loading ? <><span className="button-spinner" aria-hidden="true" />正在理解你的问题…</> : <>开始编译问题 <span aria-hidden="true">→</span></>}
         </button>
+        <div className="input-trust-line">
+          <span><span className="trust-dot" aria-hidden="true" />真实 AI + 知乎检索</span>
+          <span>只整理与复制问题，不会自动发布</span>
+        </div>
       </div>
     </section>
   );

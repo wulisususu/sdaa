@@ -25,28 +25,47 @@ export function ResultStage({
   onOpenZhihu
 }: ResultStageProps) {
   return (
-    <section className="flow-stage flow-stage-wide">
-      <div className="result-status">
-        <span className="result-check">✓</span>
-        <div><strong>问题已经整理完成</strong><small>Question Compiled</small></div>
+    <section className="flow-stage flow-stage-wide result-stage">
+      <div className="result-status" role="status">
+        <span className="result-check" aria-hidden="true">✓</span>
+        <div className="result-status-copy">
+          <strong>问题已编译完成</strong>
+          <small>Question successfully compiled</small>
+        </div>
+        <span className={`result-provenance ${evidenceUsed ? "has-evidence" : ""}`}>
+          {evidenceUsed ? "已参考本次知乎 Evidence" : "仅基于用户提供的信息"}
+        </span>
       </div>
+
       <p className="result-evidence-note">
         {evidenceUsed
-          ? "编译时已参考本次知乎检索证据，用于判断已有覆盖与知识缺口。"
+          ? "知乎检索结果只用于判断已有覆盖与知识缺口；你的个人背景和约束仍只来自你自己提供的信息。"
           : "本次编译未使用知乎检索证据，结果仅基于你提供的问题与补充条件。"}
       </p>
+
       {warnings.length > 0 && (
         <div className="result-warning-list" role="status">
           {warnings.map((warning) => <p key={warning}>{warning}</p>)}
         </div>
       )}
+
       <div className="before-after-grid">
         <article className="before-card">
           <div className="flow-heading">
-            <div><span className="section-kicker">之前</span><h2>原始问题</h2><small>Before</small></div>
+            <div>
+              <span className="section-kicker">Before</span>
+              <h2>你一开始的问题</h2>
+            </div>
           </div>
-          <p>{rawQuestion}</p>
+          <blockquote>{rawQuestion}</blockquote>
+          <div className="before-card-caption">原始表达保持不变，用来直观看见这次“编译”补充了什么。</div>
         </article>
+
+        <div className="compile-bridge" aria-hidden="true">
+          <span>Compile</span>
+          <strong>→</strong>
+        </div>
+
         <CompiledQuestionPanel
           question={question}
           evidenceUsed={evidenceUsed}
@@ -56,7 +75,9 @@ export function ResultStage({
           onOpenZhihu={onOpenZhihu}
         />
       </div>
+
       <div className="result-footer-actions">
+        <span>还想整理另一个问题？</span>
         <button className="ghost-button" type="button" onClick={onNewQuestion}>新建一个问题</button>
       </div>
     </section>
