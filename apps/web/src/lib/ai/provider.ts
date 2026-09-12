@@ -1,7 +1,7 @@
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import type { ApiErrorCode } from "@ask-better/domain";
 import { generateText, NoObjectGeneratedError, Output } from "ai";
-import type { ZodType } from "zod";
+import { z, type ZodType } from "zod";
 
 export interface LLMConfig {
   baseURL: string;
@@ -39,6 +39,29 @@ function isTimeoutError(error: unknown): boolean {
   return error instanceof Error && (error.name === "AbortError" || error.name === "TimeoutError");
 }
 
+const JSON_RESPONSE_RULE =
+  "只返回一个合法的 json 对象作为最终答案：不要输出 Markdown 代码块、解释性文字或任何前后缀。";
+
+/**
+ * OpenAI-compatible 上游在缺少 json_schema 支持时会退化为 response_format=json_object，
+ * 而部分上游（如 DeepSeek）要求提示词中必须字面出现 "json"，否则直接返回 HTTP 400。
+ * 同时因为 json_schema 未被发送，模型只能从提示词获知输出结构，所以这里一并附上 JSON Schema。
+ */
+export function buildJsonSystemPrompt(system: string, schema?: ZodType): string {
+  const sections = [system, JSON_RESPONSE_RULE];
+
+  if (schema) {
+    try {
+      const jsonSchema = z.toJSONSchema(schema, { unrepresentable: "any" });
+      sections.push(`返回的 json 必须符合以下 JSON Schema：\n${JSON.stringify(jsonSchema)}`);
+    } catch {
+      // 某些 Zod 结构无法描述为 JSON Schema；此时仍保留上面的 json 约束，不阻断调用。
+    }
+  }
+
+  return sections.join("\n\n");
+}
+
 export async function generateStructured<T>(
   schema: ZodType<T>,
   system: string,
@@ -55,7 +78,7 @@ export async function generateStructured<T>(
   try {
     const { output } = await generateText({
       model: provider(config.model),
-      system,
+      system: buildJsonSystemPrompt(system, schema),
       prompt,
       output: Output.object({ schema }),
       abortSignal: AbortSignal.timeout(20_000)
