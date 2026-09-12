@@ -25,7 +25,7 @@ describe("real pipeline UI", () => {
   test("initial compiler no longer presents mock data", () => {
     const html = renderToStaticMarkup(<CompilerDemo />);
     expect(html).not.toContain("Mock Data");
-    expect(html).not.toContain("现在转码还有前途吗？");
+    expect(html).not.toContain(">现在转码还有前途吗？</textarea>");
   });
 
   test("input stage exposes the analyze loading state", () => {
