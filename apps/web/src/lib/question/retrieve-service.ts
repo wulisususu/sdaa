@@ -23,6 +23,10 @@ export interface RetrieveQuestionDependencies {
   cache?: CacheAdapter;
 }
 
+// 计划 Task 5 要求交给覆盖模型的证据限制为 top 12。真实知乎 ContentText 摘要常在 1000 字符量级，
+// 不设上限会把 Prompt 撑到 2.7 万字符并撞上 20 秒超时，导致 Coverage / Gap 整段不可用。
+export const COVERAGE_EVIDENCE_LIMIT = 12;
+
 function dedupeQueries(queries: string[]): string[] {
   const seen = new Set<string>();
   const result: string[] = [];
@@ -183,7 +187,7 @@ export async function retrieveQuestion(
       buildCoveragePrompt({
         rawQuestion: input.rawQuestion,
         clarificationAnswers: input.clarificationAnswers,
-        evidence
+        evidence: evidence.slice(0, COVERAGE_EVIDENCE_LIMIT)
       })
     );
     const coverage = CoverageAnalysisSchema.parse(coverageRaw);

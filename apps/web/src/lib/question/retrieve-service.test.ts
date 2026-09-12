@@ -208,3 +208,38 @@ describe("retrieveQuestion", () => {
     expect(result.knowledgeGaps).toEqual([]);
   });
 });
+
+test("limits the evidence handed to the coverage model to the top twelve items", async () => {
+  const items = Array.from({ length: 20 }, (_, i) => ({
+    ...rawItem,
+    ContentID: "answer-" + i,
+    Title: "相关讨论 " + i,
+    Url: "https://www.zhihu.com/question/" + i + "/answer/" + i + "?utm_medium=openapi_platform",
+    RankingScore: 2 - i * 0.01
+  }));
+
+  const prompts: string[] = [];
+  let call = 0;
+  const fakeGenerate = (async (_schema: unknown, _system: string, prompt: string) => {
+    call += 1;
+    prompts.push(prompt);
+    if (call === 1) return { queries: ["AI 应用开发"] };
+    return { evidenceStatus: "partial" as const, existingCoverage: [], knowledgeGaps: [] };
+  }) as unknown as StructuredGenerator;
+
+  const result = await retrieveQuestion(
+    { rawQuestion: "AI 应用开发应该怎么学？", analysis, clarificationAnswers: { q1: "零基础" } },
+    { generateStructured: fakeGenerate, searchZhihu: async () => rawData(items), cache: new MemoryCache() }
+  );
+
+  // 完整证据仍然返回给 UI（上限 24），但交给覆盖模型的样本按计划限制为 top 12。
+  expect(result.evidence.length).toBe(20);
+
+  const coveragePrompt = prompts[1];
+  for (let i = 0; i < 12; i += 1) {
+    expect(coveragePrompt).toContain("\"answer-" + i + "\"");
+  }
+  for (let i = 12; i < 20; i += 1) {
+    expect(coveragePrompt).not.toContain("\"answer-" + i + "\"");
+  }
+});
