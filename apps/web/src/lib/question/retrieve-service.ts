@@ -96,6 +96,14 @@ function validateQueryPlan(value: unknown): string[] {
   return dedupeQueries(parsed.data.queries);
 }
 
+function resolvedRetrievalStatus(
+  terminalSearchStatus: "quota_limited" | "unavailable" | null,
+  hadSearchFailure: boolean
+): "success" | "partial" | "quota_limited" {
+  if (terminalSearchStatus === "quota_limited") return "quota_limited";
+  return hadSearchFailure ? "partial" : "success";
+}
+
 export async function retrieveQuestion(
   input: RetrieveRequest,
   deps: RetrieveQuestionDependencies = {}
@@ -181,7 +189,7 @@ export async function retrieveQuestion(
     const coverage = CoverageAnalysisSchema.parse(coverageRaw);
 
     return RetrieveResultSchema.parse({
-      status: hadSearchFailure ? "partial" : "success",
+      status: resolvedRetrievalStatus(terminalSearchStatus, hadSearchFailure),
       evidenceStatus: coverage.evidenceStatus,
       queries,
       evidence,
@@ -190,9 +198,9 @@ export async function retrieveQuestion(
       ...(warnings.length ? { warnings } : {})
     });
   } catch {
-    warnings.push("覆盖分析暂时不可用，已保留真实知乎检索结果，可以继续编译。 ");
+    warnings.push("覆盖分析暂时不可用，已保留真实知乎检索结果，可以继续编译。");
     return RetrieveResultSchema.parse({
-      status: "partial",
+      status: terminalSearchStatus === "quota_limited" ? "quota_limited" : "partial",
       evidenceStatus: "partial",
       queries,
       evidence,
