@@ -6,7 +6,9 @@
     "dev": "turbo dev",
     "build": "turbo build",
     "test": "turbo test",
-    "typecheck": "turbo typecheck"
+    "typecheck": "turbo typecheck",
+    "smoke:test": "node --test scripts/smoke/pipeline.test.mjs",
+    "smoke:production": "node scripts/smoke/pipeline.mjs"
   },
   "devDependencies": {
     "turbo": "2.10.12",
