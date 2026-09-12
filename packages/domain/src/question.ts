@@ -45,12 +45,14 @@ export interface KnowledgeCoverageItem {
   title: string;
   detail: string;
   strength: "high" | "medium" | "low";
+  evidenceIds?: string[];
 }
 
 export interface KnowledgeGapItem {
   id: string;
   title: string;
   detail: string;
+  evidenceIds?: string[];
 }
 
 export interface CompiledQuestion {
