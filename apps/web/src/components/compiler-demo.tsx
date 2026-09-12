@@ -31,6 +31,14 @@ import { StageStepper } from "./stage-stepper";
 type CopyStatus = "idle" | "copied" | "error";
 type Operation = "idle" | "analyzing" | "retrieving" | "compiling";
 
+export function capVisitedStageAfterAnswer(
+  current: QuestionCompilerStage
+): QuestionCompilerStage {
+  return getStageIndex(current) > getStageIndex("diagnose")
+    ? "diagnose"
+    : current;
+}
+
 function safeErrorMessage(error: unknown): string {
   return error instanceof Error && error.message.trim().length > 0
     ? error.message
@@ -121,7 +129,7 @@ export function CompilerDemo() {
     setCompiled(null);
     setCopyStatus("idle");
     setError(null);
-    setMaxVisited("diagnose");
+    setMaxVisited((current) => capVisitedStageAfterAnswer(current));
   }
 
   function handleClarifyContinue() {
