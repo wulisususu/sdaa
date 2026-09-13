@@ -10,8 +10,16 @@ const analysis: QuestionAnalysis = {
   ambiguities: [],
   missingContext: [{ field: "private-marker", reason: "敏感缺失字段标记", priority: 3 }],
   clarificationQuestions: [
-    { id: "unused", question: "不应进入 compile prompt 的澄清题？", options: ["A", "B"] },
-    { id: "unused-2", question: "另一个不应进入 compile prompt 的澄清题？", options: ["A", "B"] }
+    {
+      id: "direction",
+      question: "更想比较哪类方向？",
+      options: ["AI 应用开发", "传统前后端"]
+    },
+    {
+      id: "goal",
+      question: "最关心哪类结果？",
+      options: ["就业机会", "学习投入"]
+    }
   ],
   diagnostics: [{ code: "W001", title: "不应进入 prompt 的诊断", summary: "diagnostic-secret-marker", level: "warning" }]
 };
@@ -71,7 +79,7 @@ function validArtifact() {
 }
 
 describe("compileQuestion", () => {
-  test("uses a slim compile context and returns IR plus publishable question", async () => {
+  test("uses answered clarification semantics in a slim compile context", async () => {
     let seenPrompt = "";
     const fakeGenerate = (async (_schema, _system, prompt) => {
       seenPrompt = prompt;
@@ -81,7 +89,10 @@ describe("compileQuestion", () => {
     const result = await compileQuestion(input, { generateStructured: fakeGenerate });
 
     expect(seenPrompt).toContain(input.rawQuestion);
-    expect(seenPrompt).toContain('"direction": "AI 应用开发"');
+    expect(seenPrompt).toContain("更想比较哪类方向？");
+    expect(seenPrompt).toContain('"answer": "AI 应用开发"');
+    expect(seenPrompt).toContain("最关心哪类结果？");
+    expect(seenPrompt).toContain('"answer": "就业机会"');
     expect(seenPrompt).toContain("岗位讨论较多");
     expect(seenPrompt).toContain("当前检索较少比较学习投入");
     expect(seenPrompt).toContain("非科班转码经验");
