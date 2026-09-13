@@ -27,6 +27,7 @@ import { DiagnosisStage } from "./diagnosis-stage";
 import { InputStage } from "./input-stage";
 import { ResultStage } from "./result-stage";
 import { StageStepper } from "./stage-stepper";
+import { StageSceneShell } from "./stage-scene-shell";
 
 type CopyStatus = "idle" | "copied" | "error";
 type Operation = "idle" | "analyzing" | "retrieving" | "compiling";
@@ -47,6 +48,7 @@ function safeErrorMessage(error: unknown): string {
 
 export function CompilerDemo() {
   const [stage, setStage] = useState<QuestionCompilerStage>("input");
+  const [previousStage, setPreviousStage] = useState<QuestionCompilerStage | null>(null);
   const [maxVisited, setMaxVisited] = useState<QuestionCompilerStage>("input");
   const [rawQuestion, setRawQuestion] = useState("");
   const [answers, setAnswers] = useState<ClarificationAnswers>({});
@@ -65,8 +67,14 @@ export function CompilerDemo() {
     [clarificationQuestions, answers]
   );
 
-  function markVisited(next: QuestionCompilerStage) {
+  function transitionTo(next: QuestionCompilerStage) {
+    if (next === stage) return;
+    setPreviousStage(stage);
     setStage(next);
+  }
+
+  function markVisited(next: QuestionCompilerStage) {
+    transitionTo(next);
     setMaxVisited((current) =>
       getStageIndex(next) > getStageIndex(current) ? next : current
     );
@@ -80,13 +88,13 @@ export function CompilerDemo() {
   function visit(next: QuestionCompilerStage) {
     if (!canVisitStage(next, maxVisited)) return;
     if (next !== stage && operation !== "idle") cancelPending();
-    setStage(next);
+    transitionTo(next);
   }
 
   function back() {
     cancelPending();
     setError(null);
-    setStage(getPreviousStage(stage));
+    transitionTo(getPreviousStage(stage));
   }
 
   function handleRawQuestionChange(value: string) {
@@ -98,7 +106,7 @@ export function CompilerDemo() {
     setCompiled(null);
     setCopyStatus("idle");
     setError(null);
-    setStage("input");
+    transitionTo("input");
     setMaxVisited("input");
   }
 
@@ -203,7 +211,7 @@ export function CompilerDemo() {
     setCompiled(null);
     setError(null);
     setCopyStatus("idle");
-    setStage("input");
+    transitionTo("input");
     setMaxVisited("input");
   }
 
@@ -213,7 +221,7 @@ export function CompilerDemo() {
     setCompiled(null);
     setError(null);
     setCopyStatus("idle");
-    setStage("clarify");
+    transitionTo("clarify");
     setMaxVisited("diagnose");
   }
 
@@ -234,9 +242,10 @@ export function CompilerDemo() {
           <span className="demo-badge">真实链路 · AI + 知乎检索</span>
         </section>
 
-        <StageStepper stage={stage} maxVisited={maxVisited} onChange={visit} />
+        <StageSceneShell stage={stage} previousStage={previousStage}>
+          <StageStepper stage={stage} maxVisited={maxVisited} onChange={visit} />
 
-        {stage === "input" && (
+          {stage === "input" && (
           <InputStage rawQuestion={rawQuestion} ready={ready} loading={operation === "analyzing"} error={error} onChange={handleRawQuestionChange} onContinue={handleAnalyze} />
         )}
 
@@ -252,20 +261,21 @@ export function CompilerDemo() {
           <CoverageStage coverage={retrieval.existingCoverage} gaps={retrieval.knowledgeGaps} evidence={retrieval.evidence} status={retrieval.status} loading={operation === "compiling"} error={error} onBack={back} onContinue={handleCompile} />
         )}
 
-        {stage === "result" && compiled && (
-          <ResultStage
-            rawQuestion={rawQuestion}
-            question={compiled.compiledQuestion}
-            publishableQuestion={compiled.publishableQuestion}
-            evidenceUsed={compiled.evidenceUsed}
-            warnings={compiled.warnings}
-            copyStatus={copyStatus}
-            onCopy={handleCopy}
-            onReoptimize={handleReoptimize}
-            onNewQuestion={handleNewQuestion}
-            onOpenZhihu={handleOpenZhihu}
-          />
-        )}
+          {stage === "result" && compiled && (
+            <ResultStage
+              rawQuestion={rawQuestion}
+              question={compiled.compiledQuestion}
+              publishableQuestion={compiled.publishableQuestion}
+              evidenceUsed={compiled.evidenceUsed}
+              warnings={compiled.warnings}
+              copyStatus={copyStatus}
+              onCopy={handleCopy}
+              onReoptimize={handleReoptimize}
+              onNewQuestion={handleNewQuestion}
+              onOpenZhihu={handleOpenZhihu}
+            />
+          )}
+        </StageSceneShell>
       </div>
     </main>
   );

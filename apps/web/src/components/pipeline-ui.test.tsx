@@ -28,6 +28,8 @@ const evidence = [{
 describe("real pipeline UI", () => {
   test("initial compiler no longer presents mock data", () => {
     const html = renderToStaticMarkup(<CompilerDemo />);
+    expect(html).toContain('data-stage="input"');
+    expect(html).toContain("知乎 AI 提问编译器");
     expect(html).not.toContain("Mock Data");
     expect(html).not.toContain(">现在转码还有前途吗？</textarea>");
   });
