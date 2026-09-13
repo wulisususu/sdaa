@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 :root {
+  --app-header-height: 72px;
   --page: #f4f6fa;
   --page-glow: rgba(79, 70, 229, 0.08);
   --surface: #ffffff;
@@ -160,6 +161,106 @@ a {
   width: min(1320px, calc(100% - 48px));
   margin: 0 auto;
   padding: 34px 0 64px;
+}
+
+/* Five-scene shell */
+.stage-scene-shell {
+  position: relative;
+  min-height: calc(100dvh - var(--app-header-height));
+  overflow: clip;
+  isolation: isolate;
+  background: var(--scene-background, var(--page));
+  color: var(--scene-foreground, var(--text-primary));
+}
+
+.stage-scene-content {
+  position: relative;
+  z-index: 2;
+}
+
+.stage-backdrop {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  overflow: clip;
+  pointer-events: none;
+  color: var(--scene-accent, var(--accent));
+}
+
+.stage-backdrop::before,
+.stage-backdrop::after,
+.stage-backdrop-shape {
+  position: absolute;
+  display: block;
+  content: "";
+  pointer-events: none;
+}
+
+.stage-backdrop::before {
+  width: min(82vw, 980px);
+  height: min(82vw, 980px);
+  top: -28%;
+  right: -18%;
+  border: clamp(1px, 0.16vw, 2px) solid currentColor;
+  border-radius: 50%;
+  opacity: 0.18;
+  transform: rotate(-14deg);
+}
+
+.stage-backdrop::after {
+  width: min(48vw, 560px);
+  height: min(48vw, 560px);
+  bottom: -24%;
+  left: -12%;
+  border-radius: 38% 62% 54% 46%;
+  background: currentColor;
+  opacity: 0.07;
+  transform: rotate(18deg);
+}
+
+.stage-backdrop-shape-primary {
+  width: min(31vw, 380px);
+  height: min(31vw, 380px);
+  top: 22%;
+  left: 8%;
+  border: clamp(1px, 0.14vw, 2px) solid currentColor;
+  border-radius: 46% 54% 62% 38%;
+  opacity: 0.11;
+  transform: rotate(22deg);
+}
+
+.stage-backdrop-shape-secondary {
+  width: min(18vw, 240px);
+  height: min(18vw, 240px);
+  right: 12%;
+  bottom: 14%;
+  border: clamp(1px, 0.12vw, 2px) solid currentColor;
+  border-radius: 50%;
+  opacity: 0.13;
+}
+
+.stage-backdrop-input .stage-backdrop-shape-primary {
+  border-radius: 50%;
+  transform: rotate(0deg);
+}
+
+.stage-backdrop-clarify .stage-backdrop-shape-primary {
+  border-radius: 48% 52% 52% 48%;
+}
+
+.stage-backdrop-diagnose .stage-backdrop-shape-primary {
+  border-radius: 12%;
+  transform: rotate(15deg);
+}
+
+.stage-backdrop-coverage .stage-backdrop-shape-primary {
+  border-radius: 50%;
+  box-shadow: 72px 38px 0 -70px currentColor, 138px 86px 0 -70px currentColor;
+}
+
+.stage-backdrop-result .stage-backdrop-shape-primary {
+  border-radius: 10%;
+  transform: rotate(-12deg);
 }
 
 .page-intro {
