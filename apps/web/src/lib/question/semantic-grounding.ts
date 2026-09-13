@@ -12,13 +12,30 @@ export const SemanticViolationCodeSchema = z.enum([
 
 export const SemanticViolationTargetSchema = z.enum(["title", "context", "question"]);
 
-export const SemanticViolationSchema = z.object({
-  code: SemanticViolationCodeSchema,
-  target: SemanticViolationTargetSchema,
-  questionIndex: z.number().int().min(0).max(3).optional(),
-  excerpt: z.string().trim().min(1),
-  reason: z.string().trim().min(1)
-});
+export const SemanticViolationSchema = z
+  .object({
+    code: SemanticViolationCodeSchema,
+    target: SemanticViolationTargetSchema,
+    questionIndex: z.number().int().min(0).max(3).optional(),
+    excerpt: z.string().trim().min(1),
+    reason: z.string().trim().min(1)
+  })
+  .superRefine((value, ctx) => {
+    if (value.target === "question" && value.questionIndex === undefined) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["questionIndex"],
+        message: "target=question 时必须提供 questionIndex。"
+      });
+    }
+    if (value.target !== "question" && value.questionIndex !== undefined) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["questionIndex"],
+        message: "只有 target=question 时允许提供 questionIndex。"
+      });
+    }
+  });
 
 export const SemanticAuditSchema = z
   .object({
@@ -43,9 +60,8 @@ export const SemanticAuditSchema = z
   });
 
 /**
- * 审计器只被允许看到“用户真正说过什么”和“发布稿说了什么”。
- * missingContext / diagnostics / 未回答澄清 / Evidence 正文与评论刻意不在此结构中，
- * 避免审计器被编译器自己的推断或知乎内容带偏。
+ * 审计器只被允许看到“用户真正说过什么”和最小必要的编译器假设/知识提示。
+ * missingContext / diagnostics / 未回答澄清 / Evidence 正文与评论刻意不在此结构中。
  */
 export type SemanticAuditInput = SemanticAuditPromptInput;
 
@@ -55,8 +71,8 @@ export type SemanticAuditor = (input: SemanticAuditInput) => Promise<SemanticAud
 
 export function describeSemanticViolations(violations: SemanticAuditViolation[]): string[] {
   return violations.map((violation) => {
-    const where = violation.target === "question" && violation.questionIndex !== undefined
-      ? `子问题 #${violation.questionIndex + 1}`
+    const where = violation.target === "question"
+      ? `子问题 #${(violation.questionIndex ?? 0) + 1}`
       : violation.target === "title"
         ? "标题"
         : "正文";
@@ -70,6 +86,34 @@ function compileFailed(message: string, cause?: unknown): LLMProviderError {
   });
 }
 
+function validateViolationReferences(input: SemanticAuditInput, result: SemanticAuditResult): void {
+  for (const violation of result.violations) {
+    let targetText: string | undefined;
+
+    if (violation.target === "title") {
+      targetText = input.publishableQuestion.title;
+    } else if (violation.target === "context") {
+      targetText = input.publishableQuestion.context;
+    } else {
+      const index = violation.questionIndex;
+      if (index === undefined || index >= input.publishableQuestion.questions.length) {
+        throw compileFailed(
+          "语义审计引用无法校验，请重试。",
+          new Error("questionIndex 超出 publishableQuestion.questions 范围。")
+        );
+      }
+      targetText = input.publishableQuestion.questions[index];
+    }
+
+    if (!targetText.includes(violation.excerpt)) {
+      throw compileFailed(
+        "语义审计引用无法校验，请重试。",
+        new Error(`excerpt 未出现在声明的 ${violation.target} 目标中。`)
+      );
+    }
+  }
+}
+
 export async function auditSemanticGrounding(
   input: SemanticAuditInput,
   deps: { generateStructured?: StructuredGenerator } = {}
@@ -81,7 +125,6 @@ export async function auditSemanticGrounding(
     raw = await generate(SemanticAuditSchema, SEMANTIC_AUDIT_SYSTEM_PROMPT, buildSemanticAuditPrompt(input));
   } catch (error) {
     if (error instanceof LLMProviderError) {
-      // 审计器输出结构非法属于“发布质量门失败”，而不是 provider 配置或网络问题。
       if (error.code === "AI_INVALID_OUTPUT") {
         throw compileFailed("语义审计结果无法校验，请重试。", error);
       }
@@ -95,5 +138,6 @@ export async function auditSemanticGrounding(
     throw compileFailed("语义审计结果无法校验，请重试。", parsed.error);
   }
 
+  validateViolationReferences(input, parsed.data);
   return parsed.data;
 }
