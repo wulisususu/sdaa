@@ -1,4 +1,4 @@
-import type { PublishableQuestion } from "@ask-better/domain";
+import type { CompiledQuestion, PublishableQuestion } from "@ask-better/domain";
 
 export type PublicationQualityCode =
   | "META_VOICE"
@@ -23,14 +23,29 @@ const FORBIDDEN_META_PHRASES = [
   "希望回答重点："
 ] as const;
 
-const NUMERIC_FACT_RE = /\d+(?:\.\d+)?\s*(?:小时|天|周|个月|月|年|元|万元|%|岁|公里|km|分钟)/giu;
+const UNIT = "小时|天|周|个月|月|年|元|万元|%|岁|公里|km|分钟";
+const NUMERIC_FACT_RE = new RegExp(`\\d+(?:\\.\\d+)?\\s*(?:${UNIT})`, "giu");
+const NUMERIC_RANGE_RE = new RegExp(
+  `(\\d+(?:\\.\\d+)?)\\s*(?:-|–|—|~|～|至|到)\\s*(\\d+(?:\\.\\d+)?)\\s*(${UNIT})`,
+  "giu"
+);
 
 function normalizeNumericFact(value: string): string {
   return value.normalize("NFKC").replace(/\s+/g, "").toLowerCase();
 }
 
 function extractNumericFacts(value: string): Set<string> {
-  return new Set(Array.from(value.matchAll(NUMERIC_FACT_RE), (match) => normalizeNumericFact(match[0])));
+  const facts = new Set(
+    Array.from(value.matchAll(NUMERIC_FACT_RE), (match) => normalizeNumericFact(match[0]))
+  );
+
+  for (const match of value.matchAll(NUMERIC_RANGE_RE)) {
+    const [, start, end, unit] = match;
+    facts.add(normalizeNumericFact(`${start}${unit}`));
+    facts.add(normalizeNumericFact(`${end}${unit}`));
+  }
+
+  return facts;
 }
 
 function normalizeQuestion(value: string): string {
@@ -57,19 +72,31 @@ function hasDuplicateQuestion(questions: string[]): boolean {
   return false;
 }
 
+function compiledQuestionText(question: CompiledQuestion): string {
+  return [
+    question.title,
+    question.background,
+    question.goal,
+    ...question.constraints,
+    question.coreUncertainty,
+    ...question.expectedAnswer
+  ].join("\n");
+}
+
 export function validatePublicationQuality(input: {
   rawQuestion: string;
   clarificationAnswers: Record<string, string>;
+  compiledQuestion: CompiledQuestion;
   publishableQuestion: PublishableQuestion;
 }): PublicationQualityViolation[] {
   const violations: PublicationQualityViolation[] = [];
-  const outputText = [
+  const publishableText = [
     input.publishableQuestion.title,
     input.publishableQuestion.context,
     ...input.publishableQuestion.questions
   ].join("\n");
 
-  const metaPhrase = FORBIDDEN_META_PHRASES.find((phrase) => outputText.includes(phrase));
+  const metaPhrase = FORBIDDEN_META_PHRASES.find((phrase) => publishableText.includes(phrase));
   if (metaPhrase) {
     violations.push({
       code: "META_VOICE",
@@ -79,12 +106,14 @@ export function validatePublicationQuality(input: {
 
   const userFactsText = [input.rawQuestion, ...Object.values(input.clarificationAnswers)].join("\n");
   const allowedNumericFacts = extractNumericFacts(userFactsText);
-  const outputNumericFacts = extractNumericFacts(outputText);
-  const novelNumericFacts = [...outputNumericFacts].filter((fact) => !allowedNumericFacts.has(fact));
+  const generatedNumericFacts = extractNumericFacts(
+    `${publishableText}\n${compiledQuestionText(input.compiledQuestion)}`
+  );
+  const novelNumericFacts = [...generatedNumericFacts].filter((fact) => !allowedNumericFacts.has(fact));
   if (novelNumericFacts.length > 0) {
     violations.push({
       code: "NUMERIC_DRIFT",
-      message: `最终发布稿引入了用户未明确提供的数字约束：${novelNumericFacts.join("、")}。`
+      message: `编译结果引入了用户未明确提供的数字约束：${novelNumericFacts.join("、")}。`
     });
   }
 
