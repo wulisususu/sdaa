@@ -42,6 +42,7 @@ export const stageVisuals: Record<QuestionCompilerStage, StageVisual> = {
 
 export const motionTokens = {
   micro: 0.16,
+  reduced: 0.16,
   fast: 0.24,
   standard: 0.42,
   scene: 0.76,

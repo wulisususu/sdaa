@@ -43,7 +43,7 @@ export function StageSceneShell({ stage, previousStage, children }: StageSceneSh
         gsap.fromTo(
           mainContent,
           { opacity: 0 },
-          { opacity: 1, duration: motionTokens.micro, ease: "power1.out" }
+          { opacity: 1, duration: motionTokens.reduced, ease: "power1.out" }
         );
       });
 

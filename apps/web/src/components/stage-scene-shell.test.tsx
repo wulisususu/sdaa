@@ -14,6 +14,10 @@ describe("stage visuals", () => {
     expect(motionTokens.scene).toBe(0.76);
   });
 
+  test("keeps reduced motion to a short opacity reveal", () => {
+    expect(motionTokens.reduced).toBe(0.16);
+  });
+
   test("scene shell exposes stage identity without changing content semantics", () => {
     const html = renderToStaticMarkup(
       <StageSceneShell stage="coverage" previousStage="diagnose">

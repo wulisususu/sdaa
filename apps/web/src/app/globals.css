@@ -1412,6 +1412,12 @@ textarea:focus {
   border-color: #b8d7ca;
 }
 
+.stage-stepper-tone-light :focus-visible,
+.mobile-stage-progress.stage-stepper-tone-light :focus-visible {
+  outline-color: #fff;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.34);
+}
+
 /* Diagnostics and evidence motion */
 [data-motion-item] {
   will-change: transform, opacity;
