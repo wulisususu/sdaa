@@ -56,7 +56,8 @@ function buildCompileContext(input: CompileRequest): CompilePromptContext {
 
 /**
  * 审计器输入面刻意收窄：只给用户真正回答过的澄清，不给 missingContext / diagnostics /
- * 未回答澄清 / Evidence 正文与评论。
+ * 未回答澄清 / Evidence 正文与评论。coreUncertainty / knowledgeGaps 只是待核验假设和提示，
+ * 审计 Prompt 明确不得把它们当作用户事实或 scope 权威。
  */
 function buildSemanticAuditInput(input: CompileRequest, artifact: CompileArtifact): SemanticAuditInput {
   const questionById = new Map(
@@ -121,12 +122,25 @@ function publicationFailed(): LLMProviderError {
   );
 }
 
+async function collectPublicationViolations(
+  input: CompileRequest,
+  artifact: CompileArtifact,
+  audit: SemanticAuditor
+): Promise<string[]> {
+  const deterministic = qualityMessages(input, artifact);
+  const semantic = await audit(buildSemanticAuditInput(input, artifact));
+  return [
+    ...deterministic,
+    ...(semantic.passed ? [] : describeSemanticViolations(semantic.violations))
+  ];
+}
+
 /**
- * 发布质量门：确定性守卫（无 LLM）→ 语义扎根审计（LLM）。
+ * 发布质量门：每个候选产物都同时经过确定性守卫与语义扎根审计。
  *
  * LLM 预算：正常路径 2 次（compile + audit）；修复路径最多 4 次
- * （compile + audit + repair + re-audit），修复后仍不合格直接 COMPILE_FAILED，绝不循环。
- * 确定性守卫已经失败时跳过审计——此时必然要 repair，多跑一次审计只会浪费额度。
+ * （compile + audit + repair + re-audit）。第一次候选的两类违规会合并后一次性提供给 repair，
+ * 修复后任一质量门仍失败则直接 COMPILE_FAILED，绝不循环。
  */
 export async function compileQuestion(
   input: CompileRequest,
@@ -142,33 +156,9 @@ export async function compileQuestion(
     buildCompilePrompt(context)
   );
   let artifact = parseArtifact(firstGenerated);
-  const deterministicViolations = qualityMessages(input, artifact);
+  const violations = await collectPublicationViolations(input, artifact, audit);
 
-  if (deterministicViolations.length === 0) {
-    const auditResult = await audit(buildSemanticAuditInput(input, artifact));
-    if (auditResult.passed) {
-      return finalize(input, artifact);
-    }
-
-    const repaired = await generate(
-      CompileArtifactSchema,
-      COMPILE_SYSTEM_PROMPT,
-      buildCompileRepairPrompt({
-        context,
-        previousArtifact: artifact,
-        violations: describeSemanticViolations(auditResult.violations)
-      })
-    );
-    artifact = parseArtifact(repaired);
-
-    if (qualityMessages(input, artifact).length > 0) {
-      throw publicationFailed();
-    }
-    const reaudit = await audit(buildSemanticAuditInput(input, artifact));
-    if (!reaudit.passed) {
-      throw publicationFailed();
-    }
-
+  if (violations.length === 0) {
     return finalize(input, artifact);
   }
 
@@ -178,16 +168,13 @@ export async function compileQuestion(
     buildCompileRepairPrompt({
       context,
       previousArtifact: artifact,
-      violations: deterministicViolations
+      violations
     })
   );
   artifact = parseArtifact(repaired);
 
-  if (qualityMessages(input, artifact).length > 0) {
-    throw publicationFailed();
-  }
-  const reaudit = await audit(buildSemanticAuditInput(input, artifact));
-  if (!reaudit.passed) {
+  const repairedViolations = await collectPublicationViolations(input, artifact, audit);
+  if (repairedViolations.length > 0) {
     throw publicationFailed();
   }
 
