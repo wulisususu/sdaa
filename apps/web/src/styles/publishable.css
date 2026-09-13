@@ -1,0 +1,82 @@
+.publishable-card {
+  display: grid;
+  gap: 18px;
+}
+
+.publishable-context {
+  margin: 0;
+  color: var(--text-secondary, #4b5563);
+  font-size: 15px;
+  line-height: 1.8;
+  white-space: pre-wrap;
+}
+
+.publishable-questions-block {
+  display: grid;
+  gap: 10px;
+}
+
+.publishable-question-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding-left: 22px;
+}
+
+.publishable-question-list li {
+  padding-left: 4px;
+  color: var(--text-primary, #111827);
+  line-height: 1.65;
+}
+
+.compiler-details {
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 14px;
+  background: var(--surface-muted, #f8fafc);
+  overflow: hidden;
+}
+
+.compiler-details summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 48px;
+  padding: 0 16px;
+  cursor: pointer;
+  color: var(--text-primary, #111827);
+  font-weight: 650;
+  list-style: none;
+}
+
+.compiler-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.compiler-details summary span {
+  color: var(--text-tertiary, #6b7280);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.compiler-details[open] summary {
+  border-bottom: 1px solid var(--border, #e5e7eb);
+}
+
+.compiler-details-body {
+  display: grid;
+  gap: 18px;
+  padding: 16px;
+}
+
+@media (max-width: 720px) {
+  .publishable-context {
+    font-size: 14px;
+  }
+
+  .compiler-details summary {
+    min-height: 44px;
+  }
+}
