@@ -557,6 +557,85 @@ textarea:focus-visible {
   opacity: 0.78;
 }
 
+/* Scene-aware progress navigation */
+.stage-stepper-tone-dark {
+  border-color: rgba(45, 33, 20, 0.16);
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.stage-stepper-tone-dark .stage-step.is-active {
+  color: var(--scene-accent, var(--accent));
+  background: rgba(255, 255, 255, 0.64);
+  border-color: color-mix(in srgb, var(--scene-accent, var(--accent)) 26%, transparent);
+}
+
+.stage-stepper-tone-dark .stage-step.is-active .stage-index {
+  color: var(--scene-surface, #fff);
+  background: var(--scene-accent, var(--accent));
+  border-color: var(--scene-accent, var(--accent));
+}
+
+.stage-stepper-tone-light {
+  border-color: rgba(255, 255, 255, 0.24);
+  background: rgba(16, 29, 58, 0.22);
+  box-shadow: 0 12px 30px rgba(12, 21, 48, 0.12);
+}
+
+.stage-stepper-tone-light .stage-step {
+  color: rgba(255, 255, 255, 0.68);
+}
+
+.stage-stepper-tone-light .stage-step:hover:not(:disabled):not(.is-active) {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.stage-stepper-tone-light .stage-step.is-active {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+.stage-stepper-tone-light .stage-index {
+  color: rgba(255, 255, 255, 0.72);
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.stage-stepper-tone-light .stage-step.is-active .stage-index {
+  color: var(--scene-surface, #23334f);
+  background: #fff;
+  border-color: #fff;
+}
+
+.stage-stepper-tone-light .stage-step.is-completed .stage-index {
+  color: var(--scene-surface, #23334f);
+  background: var(--scene-accent, rgba(255, 255, 255, 0.2));
+  border-color: transparent;
+}
+
+.mobile-stage-progress.stage-stepper-tone-light {
+  border-color: rgba(255, 255, 255, 0.24);
+  background: rgba(16, 29, 58, 0.22);
+}
+
+.mobile-stage-progress.stage-stepper-tone-light .mobile-stage-progress-copy > span,
+.mobile-stage-progress.stage-stepper-tone-light .mobile-stage-progress-copy > strong {
+  color: #fff;
+}
+
+.mobile-stage-progress.stage-stepper-tone-light .mobile-stage-progress-copy > small {
+  color: rgba(255, 255, 255, 0.68);
+}
+
+.mobile-stage-progress.stage-stepper-tone-light .mobile-stage-progress-track {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.mobile-stage-progress.stage-stepper-tone-light .mobile-stage-progress-track > span {
+  background: linear-gradient(90deg, #fff, var(--scene-accent, #dcd9ff));
+}
+
 /* Shared stage surfaces */
 .flow-stage {
   animation: stage-enter 260ms ease both;

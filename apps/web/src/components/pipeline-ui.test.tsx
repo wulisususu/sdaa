@@ -77,6 +77,13 @@ describe("real pipeline UI", () => {
     expect(html).toContain("问题体检");
   });
 
+  test("stepper exposes scene tone and stable motion hooks", () => {
+    const html = renderToStaticMarkup(<StageStepper stage="coverage" maxVisited="coverage" />);
+    expect(html).toContain('data-tone="light"');
+    expect(html).toContain('data-motion="stage-number"');
+    expect(html).toContain('data-motion="headline"');
+  });
+
   test("clarification selection has a non-color check indicator", () => {
     const html = renderToStaticMarkup(
       <ClarificationStage

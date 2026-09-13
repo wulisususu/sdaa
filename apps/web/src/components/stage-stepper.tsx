@@ -6,6 +6,7 @@ import {
   stageLabels,
   type QuestionCompilerStage
 } from "@ask-better/domain";
+import { stageVisuals } from "../lib/stage-visuals";
 
 interface StageStepperProps {
   stage: QuestionCompilerStage;
@@ -18,13 +19,15 @@ export function StageStepper({ stage, maxVisited, onChange }: StageStepperProps)
   const currentNumber = currentIndex + 1;
   const totalStages = questionCompilerStages.length;
   const progress = `${(currentNumber / totalStages) * 100}%`;
+  const tone = stageVisuals[stage].foreground;
+  const toneClass = `stage-stepper-tone-${tone}`;
 
   return (
     <>
-      <div className="mobile-stage-progress" aria-label={`当前进度：${currentNumber} / ${totalStages}，${stageLabels[stage]}`}>
+      <div className={`mobile-stage-progress ${toneClass}`} data-tone={tone} aria-label={`当前进度：${currentNumber} / ${totalStages}，${stageLabels[stage]}`}>
         <div className="mobile-stage-progress-copy">
-          <span>{currentNumber} / {totalStages}</span>
-          <strong>{stageLabels[stage]}</strong>
+          <span data-motion="stage-number">{currentNumber} / {totalStages}</span>
+          <strong data-motion="headline">{stageLabels[stage]}</strong>
           <small>{stageEnglishLabels[stage]}</small>
         </div>
         <div className="mobile-stage-progress-track" aria-hidden="true">
@@ -32,7 +35,7 @@ export function StageStepper({ stage, maxVisited, onChange }: StageStepperProps)
         </div>
       </div>
 
-      <nav className="stage-stepper desktop-stage-stepper" aria-label="问题整理进度">
+      <nav className={`stage-stepper desktop-stage-stepper ${toneClass}`} data-tone={tone} aria-label="问题整理进度">
         {questionCompilerStages.map((item, index) => {
           const active = item === stage;
           const visited = getStageIndex(item) <= getStageIndex(maxVisited);
@@ -48,11 +51,11 @@ export function StageStepper({ stage, maxVisited, onChange }: StageStepperProps)
               disabled={!enabled}
               aria-current={active ? "step" : undefined}
             >
-              <span className="stage-index" aria-hidden="true">
+              <span className="stage-index" data-motion={active ? "stage-number" : undefined} aria-hidden="true">
                 {completed ? "✓" : index + 1}
               </span>
               <span className="stage-copy">
-                <strong>{stageLabels[item]}</strong>
+                <strong data-motion={active ? "headline" : undefined}>{stageLabels[item]}</strong>
                 <small>{completed ? "已完成" : stageEnglishLabels[item]}</small>
               </span>
             </button>
