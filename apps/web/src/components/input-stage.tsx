@@ -28,11 +28,7 @@ export function InputStage({
           <div>
             <span className="section-kicker">知乎 AI 提问编译器</span>
             <h2>你真正想问什么？</h2>
-            <p className="stage-lead">
-              不需要先组织好语言。把困惑原样写下来，我们会先识别意图、补齐关键条件，再判断知乎已有讨论覆盖了什么。
-            </p>
           </div>
-          <span className="compiler-state-pill">Question Input</span>
         </div>
         <label className="sr-only" htmlFor="flow-question">你想整理的问题</label>
         <textarea

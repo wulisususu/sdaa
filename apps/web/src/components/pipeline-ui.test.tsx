@@ -32,6 +32,20 @@ describe("real pipeline UI", () => {
     expect(html).not.toContain(">现在转码还有前途吗？</textarea>");
   });
 
+  test("input stage removes the retired explanatory copy and Question Input pill", () => {
+    const html = renderToStaticMarkup(
+      <InputStage
+        rawQuestion="AI 应用开发应该怎么学？"
+        ready
+        onChange={() => undefined}
+        onContinue={() => undefined}
+      />
+    );
+
+    expect(html).not.toContain("不需要先组织好语言");
+    expect(html).not.toContain("Question Input");
+  });
+
   test("input stage exposes the analyze loading state", () => {
     const html = renderToStaticMarkup(
       <InputStage rawQuestion="AI 应用开发应该怎么学？" ready loading onChange={() => undefined} onContinue={() => undefined} />
