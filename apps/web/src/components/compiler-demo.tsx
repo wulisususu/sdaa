@@ -3,7 +3,7 @@
 import {
   canVisitStage,
   countAnsweredClarifications,
-  formatCompiledQuestion,
+  formatPublishableQuestion,
   getPreviousStage,
   getStageIndex,
   isRawQuestionReady,
@@ -187,7 +187,7 @@ export function CompilerDemo() {
   async function handleCopy() {
     if (!compiled) return;
     try {
-      await navigator.clipboard.writeText(formatCompiledQuestion(compiled.compiledQuestion));
+      await navigator.clipboard.writeText(formatPublishableQuestion(compiled.publishableQuestion));
       setCopyStatus("copied");
     } catch {
       setCopyStatus("error");
@@ -237,56 +237,26 @@ export function CompilerDemo() {
         <StageStepper stage={stage} maxVisited={maxVisited} onChange={visit} />
 
         {stage === "input" && (
-          <InputStage
-            rawQuestion={rawQuestion}
-            ready={ready}
-            loading={operation === "analyzing"}
-            error={error}
-            onChange={handleRawQuestionChange}
-            onContinue={handleAnalyze}
-          />
+          <InputStage rawQuestion={rawQuestion} ready={ready} loading={operation === "analyzing"} error={error} onChange={handleRawQuestionChange} onContinue={handleAnalyze} />
         )}
 
         {stage === "clarify" && analysis && (
-          <ClarificationStage
-            questions={analysis.clarificationQuestions}
-            answers={answers}
-            answeredCount={answeredCount}
-            onAnswer={handleAnswer}
-            onBack={back}
-            onContinue={handleClarifyContinue}
-          />
+          <ClarificationStage questions={analysis.clarificationQuestions} answers={answers} answeredCount={answeredCount} onAnswer={handleAnswer} onBack={back} onContinue={handleClarifyContinue} />
         )}
 
         {stage === "diagnose" && analysis && (
-          <DiagnosisStage
-            rawQuestion={rawQuestion}
-            intent={analysis.intent}
-            diagnostics={analysis.diagnostics}
-            loading={operation === "retrieving"}
-            error={error}
-            onBack={back}
-            onContinue={handleRetrieve}
-          />
+          <DiagnosisStage rawQuestion={rawQuestion} intent={analysis.intent} diagnostics={analysis.diagnostics} loading={operation === "retrieving"} error={error} onBack={back} onContinue={handleRetrieve} />
         )}
 
         {stage === "coverage" && retrieval && (
-          <CoverageStage
-            coverage={retrieval.existingCoverage}
-            gaps={retrieval.knowledgeGaps}
-            evidence={retrieval.evidence}
-            status={retrieval.status}
-            loading={operation === "compiling"}
-            error={error}
-            onBack={back}
-            onContinue={handleCompile}
-          />
+          <CoverageStage coverage={retrieval.existingCoverage} gaps={retrieval.knowledgeGaps} evidence={retrieval.evidence} status={retrieval.status} loading={operation === "compiling"} error={error} onBack={back} onContinue={handleCompile} />
         )}
 
         {stage === "result" && compiled && (
           <ResultStage
             rawQuestion={rawQuestion}
             question={compiled.compiledQuestion}
+            publishableQuestion={compiled.publishableQuestion}
             evidenceUsed={compiled.evidenceUsed}
             warnings={compiled.warnings}
             copyStatus={copyStatus}
