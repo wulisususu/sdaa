@@ -3,6 +3,7 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import { CompiledQuestionPanel } from "./compiled-question-panel";
+import { ResultStage } from "./result-stage";
 
 const question = {
   title: "新一线城市大一学生四项基础生活费标准",
@@ -26,7 +27,9 @@ describe("publishable CTA", () => {
     );
 
     expect(html).toContain("前往知乎");
+    expect(html).toContain("复制知乎版问题");
     expect(html).toContain("复制后前往知乎发起提问");
+    expect(html).not.toContain("/question/ask");
   });
 
   test("never claims a publishing capability that does not exist", () => {
@@ -47,6 +50,26 @@ describe("publishable CTA", () => {
     expect(html).toContain("复制知乎版问题");
     expect(html).toMatch(/<details[^>]*class="compiler-details"(?![^>]*\bopen\b)/);
     expect(html).toContain("Question IR");
+  });
+
+  test("result exposes before, after, and action motion hooks", () => {
+    const html = renderToStaticMarkup(
+      <ResultStage
+        rawQuestion="原始问题"
+        question={question}
+        publishableQuestion={publishableQuestion}
+        evidenceUsed={false}
+        copyStatus="idle"
+        onCopy={() => undefined}
+        onReoptimize={() => undefined}
+        onNewQuestion={() => undefined}
+        onOpenZhihu={() => undefined}
+      />
+    );
+
+    expect(html).toContain('data-motion="before"');
+    expect(html).toContain('data-motion="after"');
+    expect(html).toContain('data-motion="result-actions"');
   });
 
   test("compiler demo no longer opens the 404 ask route", () => {

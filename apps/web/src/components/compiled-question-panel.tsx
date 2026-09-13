@@ -26,7 +26,7 @@ export function CompiledQuestionPanel({
       : "复制知乎版问题";
 
   return (
-    <section className="workspace-panel compiled-panel after-card">
+    <section className="workspace-panel compiled-panel after-card" data-motion="after">
       <div className="panel-heading compiled-heading">
         <div>
           <span className="section-kicker">After · Publishable</span>
@@ -68,7 +68,7 @@ export function CompiledQuestionPanel({
           </div>
         </details>
 
-        <div className="action-row compiled-actions">
+        <div className="action-row compiled-actions" data-motion="result-actions">
           <button
             className={`primary-button copy-button copy-${copyStatus}`}
             type="button"
