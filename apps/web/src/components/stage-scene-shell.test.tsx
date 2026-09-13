@@ -24,4 +24,16 @@ describe("stage visuals", () => {
     expect(html).toContain("stage-backdrop");
     expect(html).toContain("Evidence content");
   });
+
+  test("derives visual transition direction from adjacent stages", () => {
+    const forward = renderToStaticMarkup(
+      <StageSceneShell stage="coverage" previousStage="diagnose">content</StageSceneShell>
+    );
+    const backward = renderToStaticMarkup(
+      <StageSceneShell stage="diagnose" previousStage="coverage">content</StageSceneShell>
+    );
+
+    expect(forward).toContain('data-stage-direction="forward"');
+    expect(backward).toContain('data-stage-direction="backward"');
+  });
 });

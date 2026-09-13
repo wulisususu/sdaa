@@ -178,6 +178,22 @@ a {
   z-index: 2;
 }
 
+.stage-backdrop,
+[data-motion="stage-number"],
+[data-motion="headline"],
+[data-motion="main-content"] {
+  will-change: transform, opacity;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stage-backdrop,
+  [data-motion="stage-number"],
+  [data-motion="headline"],
+  [data-motion="main-content"] {
+    will-change: auto;
+  }
+}
+
 .stage-backdrop {
   position: absolute;
   z-index: 0;
