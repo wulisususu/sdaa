@@ -19,6 +19,11 @@ const analysis: QuestionAnalysis = {
       id: "goal",
       question: "最关心哪类结果？",
       options: ["就业机会", "学习投入"]
+    },
+    {
+      id: "unanswered",
+      question: "unanswered-clarification-marker",
+      options: ["选项 A", "选项 B"]
     }
   ],
   diagnostics: [{ code: "W001", title: "不应进入 prompt 的诊断", summary: "diagnostic-secret-marker", level: "warning" }]
@@ -96,6 +101,7 @@ describe("compileQuestion", () => {
     expect(seenPrompt).toContain("岗位讨论较多");
     expect(seenPrompt).toContain("当前检索较少比较学习投入");
     expect(seenPrompt).toContain("非科班转码经验");
+    expect(seenPrompt).not.toContain("unanswered-clarification-marker");
     expect(seenPrompt).not.toContain("敏感缺失字段标记");
     expect(seenPrompt).not.toContain("diagnostic-secret-marker");
     expect(seenPrompt).not.toContain("full-evidence-summary-marker");
