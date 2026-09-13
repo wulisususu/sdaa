@@ -1,5 +1,5 @@
 import type { KnowledgeCoverageItem, SearchEvidenceItem } from "@ask-better/domain";
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 
 interface KnowledgeCoverageProps {
   items: KnowledgeCoverageItem[];
@@ -24,8 +24,9 @@ export function getVisibleEvidence<T>(
 
 export function KnowledgeCoverage({ items, evidence }: KnowledgeCoverageProps) {
   const [expanded, setExpanded] = useState(false);
-  const visibleEvidence = getVisibleEvidence(evidence, expanded);
-  const canExpand = evidence.length > 5;
+  const initialEvidenceCount = 5;
+  const visibleEvidence = getVisibleEvidence(evidence, expanded, initialEvidenceCount);
+  const canExpand = evidence.length > initialEvidenceCount;
 
   return (
     <section className="knowledge-card">
@@ -66,8 +67,15 @@ export function KnowledgeCoverage({ items, evidence }: KnowledgeCoverageProps) {
             <span className="evidence-count">{evidence.length} 条 Evidence</span>
           </div>
           <div className="evidence-source-list">
-            {visibleEvidence.map((item) => (
-              <article className="evidence-source-item" key={`${item.id}-${item.url}`}>
+            {visibleEvidence.map((item, index) => {
+              const initialVisible = index < initialEvidenceCount;
+              return (
+              <article
+                className="evidence-source-item"
+                data-motion-item={initialVisible ? "evidence" : "evidence-secondary"}
+                key={`${item.id}-${item.url}`}
+                style={initialVisible ? { "--motion-delay": `${index * 70}ms` } as CSSProperties : undefined}
+              >
                 <a href={item.url} target="_blank" rel="noreferrer">
                   <span>{item.title}</span>
                   <span className="evidence-link-arrow" aria-hidden="true">↗</span>
@@ -79,7 +87,8 @@ export function KnowledgeCoverage({ items, evidence }: KnowledgeCoverageProps) {
                   <span>评论 {item.commentCount}</span>
                 </div>
               </article>
-            ))}
+              );
+            })}
           </div>
           {canExpand && (
             <button

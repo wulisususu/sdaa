@@ -1,4 +1,5 @@
 import type { QuestionDiagnostic } from "@ask-better/domain";
+import type { CSSProperties } from "react";
 
 interface DiagnosisStageProps {
   rawQuestion: string;
@@ -53,8 +54,13 @@ export function DiagnosisStage({
             <span className="answer-progress">{diagnostics.length} 项发现</span>
           </div>
           <div className="diagnostic-list diagnosis-list-large">
-            {diagnostics.map((item) => (
-              <article className={`diagnostic-card diagnostic-${item.level}`} key={item.code}>
+            {diagnostics.map((item, index) => (
+              <article
+                className={`diagnostic-card diagnostic-${item.level}`}
+                data-motion-item="diagnostic"
+                key={item.code}
+                style={{ "--motion-delay": `${index * 70}ms` } as CSSProperties}
+              >
                 <div className="diagnostic-meta">
                   <span className="diagnostic-code">{item.code}</span>
                   <span className="diagnostic-severity">{severityLabel(item.level)}</span>

@@ -123,6 +123,7 @@ describe("real pipeline UI", () => {
       />
     );
     expect(html).toContain("高优先级");
+    expect(html).toContain('data-motion-item="diagnostic"');
   });
 
   test("coverage stage renders real Zhihu evidence links and status", () => {
@@ -133,6 +134,7 @@ describe("real pipeline UI", () => {
     expect(html).toContain("AI 应用开发就业前景如何？");
     expect(html).toContain('href="https://www.zhihu.com/question/123"');
     expect(html).toContain('target="_blank"');
+    expect(html).toContain('data-motion-item="evidence"');
   });
 
   test("coverage stage exposes real compile loading feedback", () => {

@@ -1412,6 +1412,37 @@ textarea:focus {
   border-color: #b8d7ca;
 }
 
+/* Diagnostics and evidence motion */
+[data-motion-item] {
+  will-change: transform, opacity;
+  animation: scene-information-in 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--motion-delay, 0ms);
+}
+
+[data-motion-item="evidence-secondary"] {
+  animation-duration: 160ms;
+  animation-delay: 0ms;
+}
+
+@keyframes scene-information-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-motion-item] {
+    will-change: auto;
+    animation: none;
+  }
+}
+
 /* Result */
 .result-stage {
   display: grid;
