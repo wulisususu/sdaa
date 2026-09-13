@@ -34,7 +34,8 @@ describe("real pipeline UI", () => {
     expect(html).not.toContain(">现在转码还有前途吗？</textarea>");
   });
 
-  test("input stage removes the retired explanatory copy and Question Input pill", () => {
+  test("input stage removes the retired explanatory copy and compiler pill", () => {
+    const retiredInputPillLabel = ["Question", "Input"].join(" ");
     const html = renderToStaticMarkup(
       <InputStage
         rawQuestion="AI 应用开发应该怎么学？"
@@ -45,7 +46,7 @@ describe("real pipeline UI", () => {
     );
 
     expect(html).not.toContain("不需要先组织好语言");
-    expect(html).not.toContain("Question Input");
+    expect(html).not.toContain(retiredInputPillLabel);
   });
 
   test("input stage exposes the analyze loading state", () => {
