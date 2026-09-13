@@ -33,6 +33,7 @@ export function InputStage({
         <label className="sr-only" htmlFor="flow-question">你想整理的问题</label>
         <textarea
           id="flow-question"
+          data-motion="input"
           value={rawQuestion}
           onChange={(event) => onChange(event.target.value)}
           placeholder="例如：现在转码还有前途吗？"
@@ -56,6 +57,7 @@ export function InputStage({
         </div>
         <button
           className="primary-button stage-primary-action"
+          data-motion="primary-action"
           type="button"
           onClick={onContinue}
           disabled={!ready || loading}

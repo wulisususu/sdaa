@@ -49,6 +49,7 @@ export function ClarificationStage({
                           type="button"
                           key={option}
                           className={`option-button ${selected ? "is-selected" : ""}`}
+                          data-motion="option"
                           aria-pressed={selected}
                           onClick={() => onAnswer(item.id, option)}
                         >

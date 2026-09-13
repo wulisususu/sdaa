@@ -77,6 +77,23 @@ describe("real pipeline UI", () => {
     expect(html).toContain("问题体检");
   });
 
+  test("input and clarification controls expose micro-interaction hooks", () => {
+    const input = renderToStaticMarkup(
+      <InputStage rawQuestion="AI 应用开发应该怎么学？" ready onChange={() => undefined} onContinue={() => undefined} />
+    );
+    const clarification = renderToStaticMarkup(
+      <ClarificationStage
+        questions={[{ id: "q1", question: "你的主要目标是什么？", options: ["求职"] }]}
+        answers={{ q1: "求职" }} answeredCount={1}
+        onAnswer={() => undefined} onBack={() => undefined} onContinue={() => undefined}
+      />
+    );
+
+    expect(input).toContain('data-motion="input"');
+    expect(input).toContain('data-motion="primary-action"');
+    expect(clarification).toContain('data-motion="option"');
+  });
+
   test("stepper exposes scene tone and stable motion hooks", () => {
     const html = renderToStaticMarkup(<StageStepper stage="coverage" maxVisited="coverage" />);
     expect(html).toContain('data-tone="light"');

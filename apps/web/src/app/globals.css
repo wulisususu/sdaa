@@ -381,14 +381,14 @@ a {
 }
 
 .primary-button:hover:not(:disabled) {
-  transform: translateY(-1px);
+  transform: translateY(-2px);
   background: var(--accent-hover);
   border-color: var(--accent-hover);
   box-shadow: var(--shadow-accent);
 }
 
 .primary-button:active:not(:disabled) {
-  transform: translateY(0);
+  transform: scale(0.975);
   background: var(--accent-pressed);
   box-shadow: 0 3px 9px rgba(79, 70, 229, 0.16);
 }
@@ -400,7 +400,7 @@ a {
 }
 
 .secondary-button:hover:not(:disabled) {
-  transform: translateY(-1px);
+  transform: translateY(-2px);
   border-color: #aeb8c9;
   background: var(--surface-muted);
   box-shadow: var(--shadow-sm);
@@ -408,7 +408,7 @@ a {
 
 .secondary-button:active:not(:disabled),
 .ghost-button:active:not(:disabled) {
-  transform: translateY(0);
+  transform: scale(0.975);
 }
 
 .ghost-button {
@@ -418,6 +418,7 @@ a {
 }
 
 .ghost-button:hover:not(:disabled) {
+  transform: translateY(-2px);
   color: var(--text-primary);
   background: var(--surface-muted);
   border-color: var(--border);
@@ -791,7 +792,7 @@ textarea {
   outline: none;
   font-size: 15px;
   line-height: 1.72;
-  transition: border-color var(--transition-ui), box-shadow var(--transition-ui), background var(--transition-ui);
+  transition: border-color var(--transition-ui), box-shadow var(--transition-ui), background var(--transition-ui), transform var(--transition-fast);
 }
 
 textarea::placeholder {
@@ -806,6 +807,7 @@ textarea:focus {
   background: #fff;
   border-color: #9d98f5;
   box-shadow: 0 0 0 4px var(--focus-ring);
+  transform: translateY(-1px);
 }
 
 .input-meta {
@@ -1006,6 +1008,18 @@ textarea:focus {
   border-color: #928af0;
   background: var(--accent-soft);
   box-shadow: inset 0 0 0 1px rgba(79, 70, 229, 0.05);
+  animation: option-selected-pop 180ms ease-out both;
+}
+
+@keyframes option-selected-pop {
+  from { transform: scale(0.985); }
+  to { transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .option-button.is-selected {
+    animation: none;
+  }
 }
 
 .option-check {
@@ -2061,5 +2075,12 @@ textarea:focus {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+
+@media (max-width: 767px) {
+  textarea:focus {
+    transform: none;
   }
 }
