@@ -29,6 +29,7 @@ describe("publishable CTA", () => {
     expect(html).toContain("前往知乎");
     expect(html).toContain("复制知乎版问题");
     expect(html).toContain("复制后前往知乎发起提问");
+    expect(html).toContain("mobile-sticky-actions");
     expect(html).not.toContain("/question/ask");
   });
 

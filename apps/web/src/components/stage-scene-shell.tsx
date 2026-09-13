@@ -47,13 +47,13 @@ export function StageSceneShell({ stage, previousStage, children }: StageSceneSh
         );
       });
 
-      media.add("(prefers-reduced-motion: no-preference)", () => {
+      const buildTimeline = (pushPercent: number, sceneDuration: number) => {
         const timeline = gsap.timeline({ defaults: { ease: "power3.out" } });
 
         timeline.fromTo(
           backdrop,
-          { xPercent: directionMultiplier * 100 },
-          { xPercent: 0, duration: motionTokens.scene, ease: "power3.inOut" },
+          { xPercent: directionMultiplier * pushPercent },
+          { xPercent: 0, duration: sceneDuration, ease: "power3.inOut" },
           0
         );
         if (stageNumber.length > 0) {
@@ -78,6 +78,14 @@ export function StageSceneShell({ stage, previousStage, children }: StageSceneSh
           { x: 0, opacity: 1, duration: motionTokens.standard },
           0.46
         );
+      };
+
+      media.add("(prefers-reduced-motion: no-preference) and (max-width: 767px)", () => {
+        buildTimeline(16, 0.56);
+      });
+
+      media.add("(prefers-reduced-motion: no-preference) and (min-width: 768px)", () => {
+        buildTimeline(100, motionTokens.scene);
       });
 
       return () => media.revert();

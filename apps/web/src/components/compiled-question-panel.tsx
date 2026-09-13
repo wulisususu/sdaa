@@ -68,7 +68,7 @@ export function CompiledQuestionPanel({
           </div>
         </details>
 
-        <div className="action-row compiled-actions" data-motion="result-actions">
+        <div className="action-row compiled-actions mobile-sticky-actions" data-motion="result-actions">
           <button
             className={`primary-button copy-button copy-${copyStatus}`}
             type="button"
