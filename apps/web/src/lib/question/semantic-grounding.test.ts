@@ -52,8 +52,15 @@ describe("semantic grounding audit", () => {
   });
 
   test("accepts a well-formed failure and preserves the violation payload", async () => {
+    const mechanismInput: SemanticAuditInput = {
+      ...auditInput,
+      publishableQuestion: {
+        ...auditInput.publishableQuestion,
+        context: "孩子今年读大一，通讯已有家庭共享套餐，所以不计入这笔生活费。"
+      }
+    };
     const fake = (async () => mechanismFailure) as StructuredGenerator;
-    const result = await auditSemanticGrounding(auditInput, { generateStructured: fake });
+    const result = await auditSemanticGrounding(mechanismInput, { generateStructured: fake });
     expect(result.passed).toBe(false);
     expect(result.violations).toHaveLength(1);
     expect(result.violations[0]).toMatchObject({
@@ -64,8 +71,19 @@ describe("semantic grounding audit", () => {
   });
 
   test("carries the question index for a per-question scope violation", async () => {
+    const adjacentInput: SemanticAuditInput = {
+      ...auditInput,
+      publishableQuestion: {
+        ...auditInput.publishableQuestion,
+        questions: [
+          "吃饭、交通、通讯、日用品四项合计每月大概在什么区间？",
+          "各项基础开销分别大概是多少？",
+          "开学第一个月是不是要多给？"
+        ]
+      }
+    };
     const fake = (async () => adjacentScopeFailure) as StructuredGenerator;
-    const result = await auditSemanticGrounding(auditInput, { generateStructured: fake });
+    const result = await auditSemanticGrounding(adjacentInput, { generateStructured: fake });
     expect(result.violations[0]).toMatchObject({ code: "ADJACENT_SCOPE", target: "question", questionIndex: 2 });
   });
 
@@ -76,7 +94,6 @@ describe("semantic grounding audit", () => {
       return passResult;
     }) as unknown as StructuredGenerator;
 
-    // Poisoned extras simulate a future caller leaking richer context into the auditor.
     const poisoned = {
       ...auditInput,
       missingContext: [{ field: "missing-context-marker" }],
