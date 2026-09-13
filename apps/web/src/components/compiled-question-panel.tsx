@@ -77,9 +77,10 @@ export function CompiledQuestionPanel({
           >
             {copyLabel}
           </button>
-          <button className="secondary-button" type="button" onClick={onOpenZhihu}>打开知乎提问页 ↗</button>
+          <button className="secondary-button" type="button" onClick={onOpenZhihu}>前往知乎 ↗</button>
           <button className="ghost-button" type="button" onClick={onReoptimize}>重新优化</button>
         </div>
+        <p className="publish-hint">复制后前往知乎发起提问</p>
       </div>
     </section>
   );

@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 import type { CompileRequest, QuestionAnalysis, RetrieveResult } from "@ask-better/domain";
 import type { StructuredGenerator } from "./analyze-service";
 import { compileQuestion } from "./compile-service";
+import type { SemanticAuditor } from "./semantic-grounding";
 
 const analysis: QuestionAnalysis = {
   intent: ["职业转换"],
@@ -65,6 +66,9 @@ const input: CompileRequest = {
   retrieval
 };
 
+// 这些用例只关心确定性发布守卫与 slim context，语义审计默认放行。
+const passingAudit: SemanticAuditor = async () => ({ passed: true, violations: [] });
+
 function validArtifact() {
   return {
     compiledQuestion: {
@@ -91,7 +95,7 @@ describe("compileQuestion", () => {
       return validArtifact();
     }) as StructuredGenerator;
 
-    const result = await compileQuestion(input, { generateStructured: fakeGenerate });
+    const result = await compileQuestion(input, { generateStructured: fakeGenerate, auditSemanticGrounding: passingAudit });
 
     expect(seenPrompt).toContain(input.rawQuestion);
     expect(seenPrompt).toContain("更想比较哪类方向？");
@@ -117,7 +121,7 @@ describe("compileQuestion", () => {
         ...input,
         retrieval: { ...retrieval, status: "unavailable", evidenceStatus: "insufficient", evidence: [] }
       },
-      { generateStructured: fakeGenerate }
+      { generateStructured: fakeGenerate, auditSemanticGrounding: passingAudit }
     );
     expect(result.evidenceUsed).toBe(false);
   });
@@ -136,7 +140,7 @@ describe("compileQuestion", () => {
       return validArtifact();
     }) as StructuredGenerator;
 
-    const result = await compileQuestion(input, { generateStructured: fakeGenerate });
+    const result = await compileQuestion(input, { generateStructured: fakeGenerate, auditSemanticGrounding: passingAudit });
     expect(calls).toBe(2);
     expect(repairPrompt).toContain("最终发布稿包含编译器内部表达");
     expect(result.publishableQuestion.context).not.toContain("用户未提供");
@@ -149,7 +153,7 @@ describe("compileQuestion", () => {
       return artifact;
     }) as StructuredGenerator;
 
-    await expect(compileQuestion(input, { generateStructured: fakeGenerate })).rejects.toMatchObject({
+    await expect(compileQuestion(input, { generateStructured: fakeGenerate, auditSemanticGrounding: passingAudit })).rejects.toMatchObject({
       code: "COMPILE_FAILED",
       retryable: true
     });
@@ -157,7 +161,7 @@ describe("compileQuestion", () => {
 
   test("maps invalid generated artifact structure to COMPILE_FAILED", async () => {
     const fakeGenerate = (async () => ({ title: "只有标题" })) as StructuredGenerator;
-    await expect(compileQuestion(input, { generateStructured: fakeGenerate })).rejects.toMatchObject({
+    await expect(compileQuestion(input, { generateStructured: fakeGenerate, auditSemanticGrounding: passingAudit })).rejects.toMatchObject({
       code: "COMPILE_FAILED",
       retryable: true
     });

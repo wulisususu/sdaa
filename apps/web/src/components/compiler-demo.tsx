@@ -218,7 +218,7 @@ export function CompilerDemo() {
   }
 
   function handleOpenZhihu() {
-    window.open("https://www.zhihu.com/question/ask", "_blank", "noopener,noreferrer");
+    window.open("https://www.zhihu.com/", "_blank", "noopener,noreferrer");
   }
 
   return (
