@@ -1,9 +1,10 @@
-import type { CompiledQuestion } from "@ask-better/domain";
+import type { CompiledQuestion, PublishableQuestion } from "@ask-better/domain";
 import { CompiledQuestionPanel } from "./compiled-question-panel";
 
 interface ResultStageProps {
   rawQuestion: string;
   question: CompiledQuestion;
+  publishableQuestion: PublishableQuestion;
   evidenceUsed: boolean;
   warnings?: string[];
   copyStatus: "idle" | "copied" | "error";
@@ -16,6 +17,7 @@ interface ResultStageProps {
 export function ResultStage({
   rawQuestion,
   question,
+  publishableQuestion,
   evidenceUsed,
   warnings = [],
   copyStatus,
@@ -68,6 +70,7 @@ export function ResultStage({
 
         <CompiledQuestionPanel
           question={question}
+          publishableQuestion={publishableQuestion}
           evidenceUsed={evidenceUsed}
           copyStatus={copyStatus}
           onCopy={onCopy}

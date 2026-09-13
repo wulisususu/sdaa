@@ -55,6 +55,7 @@ export interface KnowledgeGapItem {
   evidenceIds?: string[];
 }
 
+/** Internal Question IR used for explainability and compilation. */
 export interface CompiledQuestion {
   title: string;
   background: string;
@@ -62,6 +63,13 @@ export interface CompiledQuestion {
   constraints: string[];
   coreUncertainty: string;
   expectedAnswer: string[];
+}
+
+/** Human-facing artifact intended to be copied into Zhihu. */
+export interface PublishableQuestion {
+  title: string;
+  context: string;
+  questions: string[];
 }
 
 export interface QuestionCompilerState {
@@ -73,6 +81,7 @@ export interface QuestionCompilerState {
   existingCoverage: KnowledgeCoverageItem[];
   knowledgeGaps: KnowledgeGapItem[];
   compiledQuestion: CompiledQuestion;
+  publishableQuestion?: PublishableQuestion;
 }
 
 export function getNextStage(stage: QuestionCompilerStage): QuestionCompilerStage {

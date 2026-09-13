@@ -84,7 +84,18 @@ export const CompiledQuestionSchema = z.object({
   goal: z.string().trim().min(1),
   constraints: z.array(z.string().trim().min(1)).max(8),
   coreUncertainty: z.string().trim().min(1),
-  expectedAnswer: z.array(z.string().trim().min(1)).min(1).max(8)
+  expectedAnswer: z.array(z.string().trim().min(1)).min(2).max(4)
+});
+
+export const PublishableQuestionSchema = z.object({
+  title: z.string().trim().min(8).max(80),
+  context: z.string().trim().min(20).max(500),
+  questions: z.array(z.string().trim().min(4).max(120)).min(1).max(4)
+});
+
+export const CompileArtifactSchema = z.object({
+  compiledQuestion: CompiledQuestionSchema,
+  publishableQuestion: PublishableQuestionSchema
 });
 
 export const SearchQueryPlanSchema = z.object({
@@ -127,6 +138,7 @@ export const CompileRequestSchema = z.object({
 
 export const CompileResultSchema = z.object({
   compiledQuestion: CompiledQuestionSchema,
+  publishableQuestion: PublishableQuestionSchema,
   evidenceUsed: z.boolean(),
   warnings: z.array(z.string().trim().min(1)).optional()
 });
@@ -155,6 +167,7 @@ export type RetrieveRequest = z.infer<typeof RetrieveRequestSchema>;
 export type RetrieveResult = z.infer<typeof RetrieveResultSchema>;
 export type EvidenceStatus = z.infer<typeof EvidenceStatusSchema>;
 export type RetrievalStatus = z.infer<typeof RetrievalStatusSchema>;
+export type CompileArtifact = z.infer<typeof CompileArtifactSchema>;
 export type CompileRequest = z.infer<typeof CompileRequestSchema>;
 export type CompileResult = z.infer<typeof CompileResultSchema>;
 export type ApiErrorCode = z.infer<typeof ApiErrorCodeSchema>;
