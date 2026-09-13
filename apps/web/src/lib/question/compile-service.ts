@@ -20,10 +20,18 @@ export interface CompileQuestionDependencies {
 }
 
 function buildCompileContext(input: CompileRequest): CompilePromptContext {
+  const questionById = new Map(
+    input.analysis.clarificationQuestions.map((question) => [question.id, question.question])
+  );
+
   return {
     user: {
       rawQuestion: input.rawQuestion,
-      clarificationAnswers: input.clarificationAnswers
+      clarifications: Object.entries(input.clarificationAnswers).map(([id, answer]) => ({
+        id,
+        question: questionById.get(id) ?? id,
+        answer
+      }))
     },
     intent: {
       intent: input.analysis.intent,
@@ -56,6 +64,7 @@ function qualityMessages(input: CompileRequest, artifact: CompileArtifact): stri
   return validatePublicationQuality({
     rawQuestion: input.rawQuestion,
     clarificationAnswers: input.clarificationAnswers,
+    compiledQuestion: artifact.compiledQuestion,
     publishableQuestion: artifact.publishableQuestion
   }).map((item) => item.message);
 }
