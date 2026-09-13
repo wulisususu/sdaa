@@ -108,7 +108,15 @@ describe("compileQuestion semantic grounding flow", () => {
       generateStructured: fakeGenerate,
       auditSemanticGrounding: async () => {
         auditCall += 1;
-        return auditCall === 1 ? failingAudit("MECHANISM_INFERENCE", "家庭共享套餐") : passAudit;
+        return auditCall === 1 ? {
+          passed: false,
+          violations: [{
+            code: "MECHANISM_INFERENCE",
+            target: "context",
+            excerpt: "通讯已有家庭共享套餐",
+            reason: "用户只说明通讯费另付，没有提供该机制。"
+          }]
+        } : passAudit;
       }
     });
 
@@ -119,21 +127,31 @@ describe("compileQuestion semantic grounding flow", () => {
   });
 
   test("fails safely when the re-audited artifact still violates semantic grounding", async () => {
-    const fakeGenerate = (async () => artifact({ context: "通讯已有家庭共享套餐，所以不计入这笔生活费。" })) as unknown as StructuredGenerator;
+    const bad = artifact({ context: "通讯已有家庭共享套餐，所以不计入这笔生活费。" });
+    const fakeGenerate = (async () => bad) as unknown as StructuredGenerator;
 
     await expect(
       compileQuestion(input, {
         generateStructured: fakeGenerate,
-        auditSemanticGrounding: async () => failingAudit("MECHANISM_INFERENCE", "家庭共享套餐")
+        auditSemanticGrounding: async () => ({
+          passed: false,
+          violations: [{
+            code: "MECHANISM_INFERENCE",
+            target: "context",
+            excerpt: "通讯已有家庭共享套餐",
+            reason: "用户只说明通讯费另付，没有提供该机制。"
+          }]
+        })
       })
     ).rejects.toMatchObject({ code: "COMPILE_FAILED", retryable: true });
   });
 
   test("never exceeds four LLM calls and never loops on repeated failure", async () => {
     let llmCalls = 0;
+    const bad = artifact({ questions: ["开学第一个月是不是要多给？"] });
     const fakeGenerate = (async () => {
       llmCalls += 1;
-      return artifact({ context: "通讯已有家庭共享套餐，所以不计入这笔生活费。" });
+      return bad;
     }) as unknown as StructuredGenerator;
 
     await expect(
@@ -141,7 +159,16 @@ describe("compileQuestion semantic grounding flow", () => {
         generateStructured: fakeGenerate,
         auditSemanticGrounding: async () => {
           llmCalls += 1;
-          return failingAudit("ADJACENT_SCOPE", "开学第一个月是不是要多给");
+          return {
+            passed: false,
+            violations: [{
+              code: "ADJACENT_SCOPE",
+              target: "question",
+              questionIndex: 0,
+              excerpt: "开学第一个月是不是要多给？",
+              reason: "该子问题不直接服务基础生活费金额。"
+            }]
+          };
         }
       })
     ).rejects.toMatchObject({ code: "COMPILE_FAILED" });
@@ -149,12 +176,12 @@ describe("compileQuestion semantic grounding flow", () => {
     expect(llmCalls).toBeLessThanOrEqual(4);
   });
 
-  test("skips the audit when the deterministic guard already failed, keeping the budget at three calls", async () => {
-    let llmCalls = 0;
+  test("still audits the first artifact when the deterministic guard already failed", async () => {
+    let generateCalls = 0;
     let auditCalls = 0;
 
     const fakeGenerate = (async (_schema: unknown, _system: string, prompt: string) => {
-      llmCalls += 1;
+      generateCalls += 1;
       if (prompt.includes("未通过发布质量检查")) {
         return artifact();
       }
@@ -169,8 +196,8 @@ describe("compileQuestion semantic grounding flow", () => {
       }
     });
 
-    expect(llmCalls).toBe(2);
-    expect(auditCalls).toBe(1);
+    expect(generateCalls).toBe(2);
+    expect(auditCalls).toBe(2);
     expect(result.publishableQuestion.context).not.toContain("用户未提供");
   });
 
@@ -182,9 +209,9 @@ describe("compileQuestion semantic grounding flow", () => {
       retrieval: { ...retrieval, knowledgeGaps: [] }
     };
 
-    let llmCalls = 0;
+    let generateCalls = 0;
     const fakeGenerate = (async (_schema: unknown, _system: string, prompt: string) => {
-      llmCalls += 1;
+      generateCalls += 1;
       if (prompt.includes("未通过发布质量检查")) {
         return {
           ...artifact(),
@@ -210,7 +237,7 @@ describe("compileQuestion semantic grounding flow", () => {
       auditSemanticGrounding: async () => passAudit
     });
 
-    expect(llmCalls).toBe(2);
+    expect(generateCalls).toBe(2);
     expect(JSON.stringify(result)).not.toContain("5 小时");
     expect(JSON.stringify(result)).not.toContain("5小时");
   });
