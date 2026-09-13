@@ -23,12 +23,18 @@ importers:
       '@ask-better/domain':
         specifier: workspace:*
         version: link:../../packages/domain
+      '@gsap/react':
+        specifier: ^2.1.2
+        version: 2.1.2(gsap@3.15.0)(react@19.2.0)
       '@upstash/redis':
         specifier: latest
         version: 1.38.4
       ai:
         specifier: latest
         version: 7.0.99(zod@4.6.2)
+      gsap:
+        specifier: ^3.15.0
+        version: 3.15.0
       next:
         specifier: 16.3.4
         version: 16.3.4(@types/node@24.13.4)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
@@ -263,6 +269,12 @@ packages:
     engines: {node: '>=18'}
     cpu: [x64]
     os: [win32]
+
+  '@gsap/react@2.1.2':
+    resolution: {integrity: sha512-JqliybO1837UcgH2hVOM4VO+38APk3ECNrsuSM4MuXp+rbf+/2IG2K1YJiqfTcXQHH7XlA0m3ykniFYstfq0Iw==}
+    peerDependencies:
+      gsap: ^3.12.5
+      react: '>=17'
 
   '@img/colour@1.1.0':
     resolution: {integrity: sha512-Td76q7j57o/tLVdgS746cYARfSyxk8iEfRxewL9h4OMzYhbW4TAcppl0mT4eyqXddh6L/jwoM75mo7ixa/pCeQ==}
@@ -887,6 +899,9 @@ packages:
   graceful-fs@4.2.11:
     resolution: {integrity: sha512-RbJ5/jmFcNNCcDV5o9eTnBLJ/HszWV0P73bc+Ff4nS/rJj+YaS6IGyiOL0VoBYX+l1Wrl3k63h/KrH+nhJ0XvQ==}
 
+  gsap@3.15.0:
+    resolution: {integrity: sha512-dMW4CWBTUK1AEEDeZc1g4xpPGIrSf9fJF960qbTZmN/QwZIWY5wgliS6JWl9/25fpTGJrMRtSjGtOmPnfjZB+A==}
+
   jiti@2.7.0:
     resolution: {integrity: sha512-AC/7JofJvZGrrneWNaEnJeOLUx+JlGt7tNa0wZiRPT4MY1wmfKjt2+6O2p2uz2+skll8OZZmJMNqeke7kKbNgQ==}
     hasBin: true
@@ -1328,6 +1343,11 @@ snapshots:
 
   '@esbuild/win32-x64@0.28.2':
     optional: true
+
+  '@gsap/react@2.1.2(gsap@3.15.0)(react@19.2.0)':
+    dependencies:
+      gsap: 3.15.0
+      react: 19.2.0
 
   '@img/colour@1.1.0':
     optional: true
@@ -1816,6 +1836,8 @@ snapshots:
     optional: true
 
   graceful-fs@4.2.11: {}
+
+  gsap@3.15.0: {}
 
   jiti@2.7.0: {}
 
