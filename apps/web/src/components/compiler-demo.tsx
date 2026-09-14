@@ -20,12 +20,15 @@ import {
 } from "../lib/api-client";
 import {
   createConversationId,
+  listRecentQuestionSessions,
   loadActiveQuestionSession,
+  loadQuestionSession,
   migrateLegacyCompletedSession,
   resolveRestorableStage,
   saveQuestionSession,
   setActiveConversationId,
   type QuestionSessionDraft,
+  type QuestionSessionSummaryV2,
   type StoredQuestionSessionV2
 } from "../lib/question-session-storage";
 import { useQuestionSessionPersistence } from "../lib/use-question-session-persistence";
@@ -36,6 +39,7 @@ import { DiagnosisStage } from "./diagnosis-stage";
 import { InputStage } from "./input-stage";
 import { ResultStage } from "./result-stage";
 import { ResumeSessionCard } from "./resume-session-card";
+import { SessionHistoryDrawer } from "./session-history-drawer";
 import { StageTransitionViewport } from "./stage-transition-viewport";
 
 type CopyStatus = "idle" | "copied" | "error";
@@ -60,6 +64,8 @@ export function CompilerDemo() {
   const [error, setError] = useState<string | null>(null);
   const [copyStatus, setCopyStatus] = useState<CopyStatus>("idle");
   const [restorableSession, setRestorableSession] = useState<StoredQuestionSessionV2 | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [recentSessions, setRecentSessions] = useState<QuestionSessionSummaryV2[]>([]);
   const [sceneResetEpoch, setSceneResetEpoch] = useState(0);
   const requestVersion = useRef(0);
   const bootstrappedRef = useRef(false);
@@ -313,6 +319,22 @@ export function CompilerDemo() {
     window.open("https://www.zhihu.com/", "_blank", "noopener,noreferrer");
   }
 
+  function handleOpenHistory() {
+    // Refreshed on open; the drawer does not need to rerender on every autosaved keystroke.
+    setRecentSessions(listRecentQuestionSessions());
+    setHistoryOpen(true);
+  }
+
+  function handleSelectHistory(selectedConversationId: string) {
+    const session = loadQuestionSession(selectedConversationId);
+    if (!session) return;
+    flushQuestionSession();
+    setActiveConversationId(selectedConversationId);
+    setRestorableSession(null);
+    hydrateQuestionSession(session);
+    setHistoryOpen(false);
+  }
+
   function renderStage(stageToRender: QuestionCompilerStage) {
     switch (stageToRender) {
       case "input":
@@ -395,7 +417,7 @@ export function CompilerDemo() {
 
   return (
     <main className="app-shell">
-      <AppHeader onNewQuestion={handleNewQuestion} />
+      <AppHeader onOpenHistory={handleOpenHistory} onNewQuestion={handleNewQuestion} />
       <div className="page-container">
         <StageTransitionViewport
           key={sceneResetEpoch}
@@ -404,6 +426,13 @@ export function CompilerDemo() {
           resetEpoch={sceneResetEpoch}
         />
       </div>
+      <SessionHistoryDrawer
+        open={historyOpen}
+        sessions={recentSessions}
+        activeConversationId={conversationId}
+        onClose={() => setHistoryOpen(false)}
+        onSelect={handleSelectHistory}
+      />
     </main>
   );
 }
