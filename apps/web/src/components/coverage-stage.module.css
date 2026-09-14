@@ -91,6 +91,7 @@
   min-height: 0;
   overflow: hidden !important;
   align-content: stretch !important;
+  align-items: stretch !important;
 }
 
 .footerStack{
@@ -106,15 +107,35 @@
  * Coverage-only scene geometry.
  * Do not modify SceneCanvas/StageTransitionViewport/globals.css.
  * Apply identically to stable/incoming/outgoing roles.
+ *
+ * Breakpoint: 1280px is exactly where `globals.css` stops collapsing `.knowledge-grid` to a single
+ * column. Above it the two cards sit side by side and each one gets a usable internal scroll
+ * window; below it the two cards would be stacked inside a bounded box, which shrank the coverage
+ * window to ~160px on a 1024x768 screen. So the bounded one-viewport layout is applied only where
+ * the desktop two-column grid exists, and everything below that keeps the ordinary scrollable
+ * canvas — the scene must never trade "scrolls a little" for "clipped and unreachable".
+ *
+ * The definite-row declaration below is load-bearing, not cosmetic. `globals.css` lays the safe
+ * frame out as `display: grid; grid-template-rows: min-content; align-content: start`, and a grid
+ * row sized by `min-content` is indefinite — so `height: 100%` on `.scene-content` (and therefore
+ * every `height: 100%` below it) silently resolves to `auto`. With production-shaped retrieval
+ * data the Coverage scene then grew to its full content height (1096px inside an 828px canvas),
+ * the inner scroll regions never became scrollable, and the footer plus the primary CTA ended up
+ * 263px below the fold. `minmax(0, 1fr)` makes the row definite so the percentage chain resolves
+ * and the overflow lands in the card scroll regions where it belongs.
+ *
+ * Note that the canvas keeps `overflow-y: auto` from `globals.css` on purpose. Forcing `hidden`
+ * here would mean that any future overflow is silently clipped — which is how the CTA became
+ * unreachable in the first place. With `auto` the measured overflow is 0 at every tested desktop
+ * size (no scrollbar appears), and if the geometry ever regresses the worst case is a scrollbar
+ * instead of a lost primary action.
  */
-@media (min-width: 768px){
-  :global(.scene-canvas[data-stage="coverage"]){
-    overflow-y: hidden;
-  }
-
+@media (min-width: 1280px){
   :global(.scene-canvas[data-stage="coverage"] .scene-safe-frame){
     height: 100%;
     min-height: 0;
+    grid-template-rows: minmax(0, 1fr);
+    align-content: stretch;
   }
 
   :global(.scene-canvas[data-stage="coverage"] .scene-content){
