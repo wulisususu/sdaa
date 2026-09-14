@@ -179,38 +179,35 @@ a{
 .scene-canvas{
   position: absolute;
   inset: 0;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
   background: var(--scene-background, var(--page));
   color: var(--scene-foreground, var(--text-primary));
 }
 
-/* During a handoff only the stable canvas stays interactive. */
+/* During a handoff neither canvas may take pointer input (keyboard locking uses `inert`). */
 .scene-canvas[data-scene-role="outgoing"],
 .scene-canvas[data-scene-role="incoming"]{
   pointer-events: none;
 }
 
-/* The safe frame is the only vertical scroll container. Content is centered when it fits
-   and top-aligned when it does not, so the top of a stage can never be clipped away. */
+/* GEOMETRY IS ROLE-INDEPENDENT.
+   The canvas is the single vertical scroll container, and the safe frame uses identical box
+   metrics for stable/outgoing/incoming scenes, so a scene cannot jump vertically when its
+   role changes mid-handoff. The frame is centered by `margin: auto` when it fits and
+   start-aligned when it overflows (auto margins collapse to 0 on overflow). */
+
 .scene-safe-frame{
   position: relative;
   z-index: 2;
   width: min(1320px, calc(100% - 96px));
-  height: 100%;
-  margin: 0 auto;
-  padding: 24px 0;
+  min-height: 100%;
+  margin: auto;
+  padding: 40px 0;
   display: grid;
-  justify-items: stretch;
+  grid-template-rows: min-content;
   align-content: start;
-  overflow-y: auto;
-  overflow-x: hidden;
-  overscroll-behavior: contain;
-}
-
-/* Short compositions still read as a centered scene. */
-.scene-canvas[data-scene-role="stable"] .scene-safe-frame{
-  align-content: center;
-  padding-block: 40px;
 }
 
 .scene-content{
@@ -218,9 +215,8 @@ a{
   min-height: 0;
 }
 
-/* Wide stages pin their action rows to the bottom of the scene and scroll only the
-   information region above them, so the primary action is always reachable without
-   the document (or the scene frame) scrolling as a whole. */
+/* Wide stages fill the scene and pin their action rows to the bottom, so the primary action
+   stays reachable while the information region above it is what scrolls. */
 .scene-content > .flow-stage-wide{
   height: 100%;
   display: flex;
@@ -240,33 +236,25 @@ a{
   flex: 0 0 auto;
 }
 
-/* The information region absorbs the leftover height and scrolls as a whole, while the
-   action row below stays pinned to the scene. */
-/* The comparison region may grow with its content, but it is bounded by a viewport budget so
-   the publishable column and its CTAs stay on screen; the region scrolls when it must.
-   Grid children keep their natural (min-content) height — no min-height:0 here, which would
-   let the publishable column be compressed below its usable height. */
+/* Regions size to their content. They must NOT stretch to fill the leftover frame height:
+   `flex: 1 1 auto` padded the stage by ~250px and pushed the primary action below the fold.
+   Overflow is still bounded by the region's own max-height (see .knowledge-grid). */
 .scene-content > .flow-stage-wide > .knowledge-grid,
 .scene-content > .flow-stage-wide > .before-after-grid,
 .scene-content > .flow-stage-wide > .diagnosis-layout{
-  flex: 1 1 auto;
+  flex: 0 0 auto;
   min-height: 0;
-  overflow: auto;
+  overflow: hidden;
   overscroll-behavior: contain;
   align-content: start;
 }
 
-.scene-content > .flow-stage-wide > .before-after-grid{
-  max-height: min(62dvh, max(340px, calc(100dvh - 520px)));
-}
-
-/* The compiled panel keeps its primary CTAs reachable while only its body scrolls.
-   The body must be the shrinking flex item: without flex:1 1 auto + min-height:0 on
-   .panel-content, the body's content escapes the panel and pushes the CTA out of view. */
+/* The compiled panel: the publishable result is the dominant surface. Its own body grows to
+   fit its content (the normal payload is short), and only genuinely long bodies scroll. */
 .compiled-panel{
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  min-height: 0;
 }
 
 .compiled-panel > .panel-heading{
@@ -276,13 +264,12 @@ a{
 .compiled-panel > .panel-content{
   display: flex;
   flex-direction: column;
-  flex: 1 1 auto;
   min-height: 0;
-  overflow: hidden;
+  flex: 1 1 auto;
 }
 
 .compiled-panel > .panel-content > .compiled-panel-body{
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -303,27 +290,182 @@ a{
   gap: 12px;
 }
 
-/* Guarantees a usable publishable area even on compact landscape viewports. */
-.scene-content > .flow-stage-wide > .before-after-grid > .compiled-panel{
-  min-height: 240px;
+/* ---- Result composition -----------------------------------------------------------------
+   The publishable output is the dominant surface. To keep the full result visible without
+   internal scrolling — and the copy CTA inside the viewport — the Result chrome (status,
+   evidence note, Before card, panel chrome) yields to it. Nothing is removed from the
+   publishable question itself. */
+.result-stage > .result-evidence-note{
+  margin: 0 0 8px;
+  padding: 7px 10px;
+  font-size: 11px;
 }
 
-/* The Result footer duplicates the persistent header's 新建问题 action, and on compact
-   landscape heights it competed with the primary CTAs for the same viewport budget. */
-.result-stage > .result-footer-actions{
+.result-stage .before-after-grid{
+  gap: 10px;
+}
+
+.result-stage .before-card{
+  padding: 10px 12px;
+}
+
+.result-stage .before-card .flow-heading{
+  margin-bottom: 2px;
+}
+
+.result-stage .before-card .flow-heading h2{
+  font-size: 14px;
+}
+
+.result-stage .before-card blockquote{
+  font-size: 12.5px;
+  margin: 3px 0;
+}
+
+.result-stage .before-card-caption{
   display: none;
 }
 
-/* Coverage can return 20+ evidence items and Result carries a long comparison surface.
-   These caps keep them from towering over the pinned action rows. */
-.knowledge-grid{
-  max-height: min(60dvh, 660px);
-  overscroll-behavior: contain;
+.result-stage .workspace-panel{
+  padding: 10px 12px;
 }
 
-.before-after-grid{
-  max-height: calc(100dvh - 300px);
-  overscroll-behavior: contain;
+.result-stage .panel-heading{
+  margin-bottom: 4px;
+}
+
+.result-stage .compiled-card{
+  padding: 10px;
+}
+
+.result-stage .publishable-card h3{
+  font-size: 14px;
+  margin: 2px 0;
+}
+
+.result-stage .publishable-context{
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.result-stage .compiled-card,
+.result-stage .compiler-details,
+.result-stage .compiled-actions{
+  margin-top: 6px;
+}
+
+.result-stage .compiled-actions .primary-button{
+  min-height: 40px;
+}
+
+.result-stage .publish-hint{
+  display: none;
+}
+
+/* Compact landscape desktops: keep the metadata one line and clamp the Before quote so the
+   complete publishable block still fits. */
+@media (max-height: 940px) and (min-width: 1024px){
+  .result-stage .stage-section-heading h2{
+    font-size: 19px;
+  }
+
+  .result-stage .stage-section-heading{
+    margin-bottom: 0;
+  }
+
+  .result-stage .stage-section-heading small{
+    display: none;
+  }
+
+  .result-stage > .result-status{
+    margin-bottom: 6px;
+    padding: 4px 9px;
+    min-height: 0;
+    gap: 9px;
+  }
+
+  .result-stage > .result-status .result-check{
+    width: 26px;
+    height: 26px;
+  }
+
+  .result-stage > .result-status strong{
+    font-size: 12px;
+  }
+
+  .result-stage > .result-status small{
+    display: none;
+  }
+
+  .result-stage .before-card blockquote{
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    font-size: 11.5px;
+    line-height: 1.35;
+  }
+
+  .result-stage .before-card .flow-heading h2{
+    font-size: 13px;
+  }
+}
+
+/* Compact landscape heights (1366x768 class): the Result composition needs a little more
+   room so the complete publishable block fits with its CTA. */
+@media (max-height: 800px) and (min-width: 1024px){
+  .result-stage{
+    padding-block: 0;
+  }
+
+  .result-stage > .stage-section-heading{
+    margin-bottom: 0;
+  }
+
+  .result-stage > .result-status{
+    margin-bottom: 2px;
+    padding: 1px 8px;
+  }
+
+  .result-stage > .result-status .result-check{
+    width: 20px;
+    height: 20px;
+    font-size: 12px;
+  }
+
+  .result-stage > .result-status .result-provenance{
+    padding: 2px 7px;
+    font-size: 10px;
+  }
+
+  .result-stage .result-evidence-note{
+    margin-bottom: 4px;
+    padding: 3px 8px;
+    font-size: 10px;
+  }
+
+  .result-stage .before-card{
+    padding: 7px 9px;
+  }
+
+  .result-stage .workspace-panel{
+    padding: 8px 9px;
+  }
+
+  .result-stage .before-after-grid{
+    gap: 5px;
+  }
+}
+
+/* Coverage growth is handled by its own bounded region (see .knowledge-grid below). */
+/* Coverage sizes to its content rather than to an overflow box: the standard payload
+   (coverage summary + gap + four evidence previews + toggle) must sit in the scene without
+   the grid becoming an internal scroll region. Genuinely long evidence sets are handled by
+   the drawer and by the capped preview count, not by hiding the grid behind `overflow: auto`. */
+.knowledge-grid,
+.stage-knowledge-grid{
+  overflow: visible;
+  align-content: start;
 }
 
 @media (max-height: 800px) and (min-width: 768px){
@@ -332,12 +474,37 @@ a{
     padding-block: 16px;
   }
 
-  .knowledge-grid{
-    max-height: min(56dvh, 520px);
+  .knowledge-grid,
+  .stage-knowledge-grid{
+    overflow: visible;
+  }
+
+  /* Compact landscape heights: trim the stage chrome so the standard Coverage payload
+     (1 coverage summary + gap + 4 evidence previews + toggle) fits without the grid
+     becoming an internal scroll region. */
+  .scene-content > .flow-stage-wide > .stage-section-heading{
+    margin-bottom: 4px;
+  }
+
+  .scene-content > .flow-stage-wide > .stage-section-heading h2{
+    font-size: 19px;
+  }
+
+  .scene-content > .flow-stage-wide > .stage-section-heading small{
+    display: none;
+  }
+
+  .scene-content > .flow-stage-wide > .retrieval-status{
+    margin-bottom: 6px;
+    padding: 5px 9px;
+  }
+
+  .scene-content > .flow-stage-wide > .stage-action-bar{
+    margin-top: 8px;
   }
 
   .flow-card{
-    padding: 16px 18px;
+    padding: 14px 16px;
   }
 
   textarea{
@@ -1273,7 +1440,7 @@ textarea:focus{
 }
 
 .evidence-source-section{
-  padding: 15px 17px 17px;
+  padding: 13px 15px 15px;
   border-top: 1px solid var(--border);
   background: linear-gradient(180deg, #fbfdfc, #f7faf9);
 }
@@ -1282,8 +1449,8 @@ textarea:focus{
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 9px;
+  gap: 14px;
+  margin-bottom: 8px;
 }
 
 .evidence-source-heading strong{
@@ -1294,10 +1461,10 @@ textarea:focus{
 .evidence-source-heading > div > span{
   display: block;
   max-width: 580px;
-  margin-top: 4px;
+  margin-top: 3px;
   color: var(--text-tertiary);
   font-size: 10px;
-  line-height: 1.5;
+  line-height: 1.45;
 }
 
 .evidence-count{
@@ -1307,17 +1474,27 @@ textarea:focus{
   font-weight: 750;
 }
 
+/* The main-scene preview is a bounded summary: up to four compact items in a 2x2 grid so the
+   normal acceptance payload fits one screen. The complete list lives in the drawer. */
 .evidence-source-list{
   display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
 
 .evidence-source-item{
-  padding: 11px 12px;
+  padding: 9px 10px;
   border: 1px solid #dfeae5;
-  border-radius: 11px;
+  border-radius: 10px;
   background: rgba(255, 255, 255, 0.86);
   transition: border-color var(--transition-ui), transform var(--transition-ui), box-shadow var(--transition-ui);
+}
+
+.evidence-source-item[data-evidence-preview="true"] p{
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .evidence-source-item:hover{
@@ -1734,15 +1911,6 @@ textarea:focus{
   box-shadow: none;
 }
 
-.result-footer-actions{
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 10px;
-  color: var(--text-tertiary);
-  font-size: 10.5px;
-}
-
 /* Legacy workspace helpers retained for compatibility */
 .desktop-workspace{
   display: grid;
@@ -2054,10 +2222,6 @@ textarea:focus{
     font-size: 11px;
   }
 
-  .result-footer-actions{
-    justify-content: space-between;
-  }
-
   .desktop-only{
     display: none;
   }
@@ -2103,10 +2267,6 @@ textarea:focus{
   .stage-action-bar,
 .detached-actions{
     grid-template-columns: 1fr;
-  }
-
-  .result-footer-actions{
-    display: grid;
   }
 }
 
