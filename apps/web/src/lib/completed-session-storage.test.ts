@@ -154,6 +154,17 @@ describe("completed-session-storage", () => {
     expect(storage.map.has(COMPLETED_SESSION_STORAGE_KEY)).toBe(false);
   });
 
+  test("rejects a session saved in the future and clears it", () => {
+    const storage = createMemoryStorage();
+    stubWindow(storage);
+    storage.map.set(COMPLETED_SESSION_STORAGE_KEY, JSON.stringify(buildEnvelope()));
+
+    const restored = loadCompletedSession(1_700_000_000_000 - 1);
+
+    expect(restored).toBeNull();
+    expect(storage.map.has(COMPLETED_SESSION_STORAGE_KEY)).toBe(false);
+  });
+
   test("rejects malformed JSON and clears it", () => {
     const storage = createMemoryStorage();
     stubWindow(storage);

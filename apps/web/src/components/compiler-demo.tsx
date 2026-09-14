@@ -247,11 +247,6 @@ export function CompilerDemo() {
     setMaxVisited("result");
   }
 
-  function discardRestoredSession() {
-    clearCompletedSession();
-    setRestorableSession(null);
-  }
-
   function handleReoptimize() {
     cancelPending();
     setRetrieval(null);
@@ -289,7 +284,7 @@ export function CompilerDemo() {
             <ResumeSessionCard
               rawQuestion={restorableSession.rawQuestion}
               onResume={restoreLastSession}
-              onDiscard={discardRestoredSession}
+              onDiscard={handleNewQuestion}
             />
           )}
 

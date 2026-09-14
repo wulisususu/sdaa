@@ -95,7 +95,8 @@ export function loadCompletedSession(now: number = Date.now()): StoredCompletedS
     return null;
   }
 
-  if (now - parsed.data.savedAt > COMPLETED_SESSION_TTL_MS) {
+  const age = now - parsed.data.savedAt;
+  if (age < 0 || age > COMPLETED_SESSION_TTL_MS) {
     removeSilently(storage);
     return null;
   }
