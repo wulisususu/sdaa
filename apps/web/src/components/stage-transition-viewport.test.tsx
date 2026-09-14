@@ -54,4 +54,14 @@ describe("scene transition system", () => {
     expect(html).toContain('data-transition-direction="forward"');
     expect(html).toContain('aria-hidden="true"');
   });
+
+  test("scene shell is one viewport and generic stage entrance is removed", () => {
+    const css = readFileSync("src/app/globals.css", "utf8");
+
+    expect(css).toContain("height: 100dvh");
+    expect(css).toContain(".scene-transition-viewport");
+    expect(css).toContain(".scene-canvas");
+    expect(css).toContain("overflow: hidden");
+    expect(css).not.toContain("animation: stage-enter 260ms");
+  });
 });
