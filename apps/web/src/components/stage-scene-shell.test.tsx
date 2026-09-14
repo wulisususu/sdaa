@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, test } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { StageSceneShell } from "./stage-scene-shell";
@@ -39,5 +40,15 @@ describe("stage visuals", () => {
 
     expect(forward).toContain('data-stage-direction="forward"');
     expect(backward).toContain('data-stage-direction="backward"');
+  });
+
+  test("light surface cards reset scene foreground to readable dark text", () => {
+    const css = readFileSync("src/app/globals.css", "utf8");
+    const surfaceRule = css.match(
+      /\.flow-card,\s*\.workspace-panel,\s*\.knowledge-card,\s*\.before-card\s*\{([^}]*)\}/s
+    );
+
+    expect(surfaceRule).not.toBeNull();
+    expect(surfaceRule?.[1]).toContain("color: var(--text-primary);");
   });
 });
