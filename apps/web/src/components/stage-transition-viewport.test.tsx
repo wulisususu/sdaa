@@ -64,4 +64,28 @@ describe("scene transition system", () => {
     expect(css).toContain("overflow: hidden");
     expect(css).not.toContain("animation: stage-enter 260ms");
   });
+
+  test("scene system keeps reduced motion and mobile safe-area rules", () => {
+    const css = readFileSync("src/app/globals.css", "utf8");
+
+    expect(css).toContain("prefers-reduced-motion: reduce");
+    expect(css).toContain("env(safe-area-inset-bottom)");
+    expect(css).toContain("100dvh");
+  });
+
+  test("transition canvases take no pointer events during the handoff", () => {
+    const css = readFileSync("src/app/globals.css", "utf8");
+
+    expect(css).toContain('.scene-canvas[data-scene-role="outgoing"]');
+    expect(css).toContain('.scene-canvas[data-scene-role="incoming"]');
+    expect(css).toContain("pointer-events: none");
+  });
+
+  test("viewport uses shorter mobile travel and keeps the full-scene crossfade for reduced motion", () => {
+    const source = readFileSync("src/components/stage-transition-viewport.tsx", "utf8");
+
+    expect(source).toContain("prefers-reduced-motion: reduce");
+    expect(source).toContain("matchMedia");
+    expect(source).toContain("28");
+  });
 });

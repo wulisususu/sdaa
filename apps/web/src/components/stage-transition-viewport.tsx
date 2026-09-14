@@ -17,6 +17,9 @@ gsap.registerPlugin(useGSAP);
 export const SCENE_HANDOFF_DURATION = 0.68;
 export const SCENE_HEADLINE_DURATION = 0.28;
 export const SCENE_HEADLINE_POSITION = 0.4;
+/** Full-canvas travel on desktop; mobile uses a shorter distance that still reads as a handoff. */
+export const SCENE_TRAVEL_DESKTOP_PERCENT = 100;
+export const SCENE_TRAVEL_MOBILE_PERCENT = 28;
 
 export interface StageTransitionViewportProps {
   targetStage: QuestionCompilerStage;
@@ -106,6 +109,12 @@ export function StageTransitionViewport({
       const media = gsap.matchMedia();
 
       media.add("(prefers-reduced-motion: no-preference)", () => {
+        // Mobile keeps a shorter travel so the handoff reads as a scene change without
+        // a full-width sweep on a narrow viewport.
+        const travelPercent = window.matchMedia("(max-width: 767px)").matches
+          ? SCENE_TRAVEL_MOBILE_PERCENT
+          : SCENE_TRAVEL_DESKTOP_PERCENT;
+
         // The incoming canvas is fully painted while it enters; only the complete
         // canvas travels, so no flat-background frame can appear.
         const timeline = gsap.timeline({
@@ -118,13 +127,13 @@ export function StageTransitionViewport({
         timeline.fromTo(
           outgoing,
           { xPercent: 0 },
-          { xPercent: -100 * sign, duration: SCENE_HANDOFF_DURATION },
+          { xPercent: -travelPercent * sign, duration: SCENE_HANDOFF_DURATION },
           0
         );
 
         timeline.fromTo(
           incoming,
-          { xPercent: 100 * sign },
+          { xPercent: travelPercent * sign },
           { xPercent: 0, duration: SCENE_HANDOFF_DURATION },
           0
         );
