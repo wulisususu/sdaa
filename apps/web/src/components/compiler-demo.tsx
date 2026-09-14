@@ -187,7 +187,13 @@ export function CompilerDemo() {
   }
 
   function handleAnswer(questionId: string, option: string) {
+    // `setClarificationAnswer` always returns a NEW object (`{ ...answers, [questionId]: option }`),
+    // so reference equality could never detect a no-op. Compare the value instead: re-picking the
+    // option that is already selected changes nothing the pipeline depends on, and clearing the
+    // owned retrieval/compiled results for it would throw away work the user can still reuse.
+    const unchanged = answers[questionId] === option;
     setAnswers((current) => setClarificationAnswer(current, questionId, option));
+    if (unchanged) return;
     setRetrieval(null);
     setCompiled(null);
     setCopyStatus("idle");
@@ -205,9 +211,9 @@ export function CompilerDemo() {
 
     // Revisiting Coverage must not re-run Retrieve. `retrieval` is the single authoritative copy
     // owned by this component, and every input it depends on clears it (raw question, Analyze,
-    // clarification answer, New Question, re-optimize), so a non-null value is always consistent
-    // with the current analysis and answers. Backing out to Diagnose deliberately keeps it, which
-    // is what makes this return safe — no cache, fingerprint or second store is involved.
+    // clarification answer change, New Question), so a non-null value is always consistent with
+    // the current analysis and answers. Backing out to Diagnose deliberately keeps it, which is
+    // what makes this return safe — no cache, fingerprint or second store is involved.
     if (retrieval) {
       setError(null);
       transitionTo("coverage");
@@ -237,6 +243,19 @@ export function CompilerDemo() {
 
   async function handleCompile() {
     if (!analysis || !retrieval || operation !== "idle") return;
+
+    // Symmetric with `handleRetrieve`: a compiled Result owned by this component is reused instead
+    // of re-compiling it. This is what makes backing out to Clarify (and then walking forward
+    // again) navigation-only — nothing is invalidated, so nothing has to be rebuilt. `compiled` is
+    // cleared by every input it actually depends on (raw question, Analyze, clarification answer
+    // change, New Question, and a freshly retrieved retrieval), so a non-null value here is always
+    // consistent with the current analysis, answers and retrieval.
+    if (compiled) {
+      setError(null);
+      transitionTo("result");
+      return;
+    }
+
     const version = ++requestVersion.current;
     setOperation("compiling");
     setError(null);
@@ -327,10 +346,15 @@ export function CompilerDemo() {
     setRestorableSession(null);
   }
 
+  /**
+   * Backing out to Clarify is pure navigation. It must NOT invalidate the owned `retrieval` or
+   * `compiled` results: the user has changed nothing yet, and the existing reuse guards in
+   * `handleRetrieve`/`handleCompile` turn walking forward again into a read of what is already
+   * owned. Only a real input change (a different clarification answer, a different raw question)
+   * clears them.
+   */
   function handleReoptimize() {
     cancelPending();
-    setRetrieval(null);
-    setCompiled(null);
     setError(null);
     setCopyStatus("idle");
     transitionTo("clarify");
