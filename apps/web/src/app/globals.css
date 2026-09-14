@@ -231,7 +231,6 @@ a{
 .scene-content > .flow-stage-wide > .flow-heading,
 .scene-content > .flow-stage-wide > .retrieval-status,
 .scene-content > .flow-stage-wide > .result-status,
-.scene-content > .flow-stage-wide > .result-evidence-note,
 .scene-content > .flow-stage-wide > .result-warning-list{
   flex: 0 0 auto;
 }
@@ -293,14 +292,8 @@ a{
 /* ---- Result composition -----------------------------------------------------------------
    The publishable output is the dominant surface. To keep the full result visible without
    internal scrolling — and the copy CTA inside the viewport — the Result chrome (status,
-   evidence note, Before card, panel chrome) yields to it. Nothing is removed from the
-   publishable question itself. */
-.result-stage > .result-evidence-note{
-  margin: 0 0 8px;
-  padding: 7px 10px;
-  font-size: 11px;
-}
-
+   Before card, panel chrome) yields to it. Nothing is removed from the publishable question
+   itself. */
 .result-stage .before-after-grid{
   gap: 10px;
 }
@@ -320,10 +313,6 @@ a{
 .result-stage .before-card blockquote{
   font-size: 12.5px;
   margin: 3px 0;
-}
-
-.result-stage .before-card-caption{
-  display: none;
 }
 
 .result-stage .workspace-panel{
@@ -431,17 +420,6 @@ a{
     width: 20px;
     height: 20px;
     font-size: 12px;
-  }
-
-  .result-stage > .result-status .result-provenance{
-    padding: 2px 7px;
-    font-size: 10px;
-  }
-
-  .result-stage .result-evidence-note{
-    margin-bottom: 4px;
-    padding: 3px 8px;
-    font-size: 10px;
   }
 
   .result-stage .before-card{
@@ -1694,32 +1672,6 @@ textarea:focus{
   font-size: 10px;
 }
 
-.result-provenance{
-  margin-left: auto;
-  padding: 6px 9px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  color: var(--text-secondary);
-  background: rgba(255, 255, 255, 0.76);
-  font-size: 10px;
-  font-weight: 720;
-  white-space: nowrap;
-}
-
-.result-provenance.has-evidence{
-  color: var(--evidence);
-  border-color: #c6e2d7;
-  background: var(--evidence-soft);
-}
-
-.result-evidence-note{
-  margin: 0;
-  padding: 0 3px;
-  color: var(--text-secondary);
-  font-size: 11px;
-  line-height: 1.6;
-}
-
 .result-warning-list{
   display: grid;
   gap: 6px;
@@ -1761,43 +1713,6 @@ textarea:focus{
   font-weight: 720;
   line-height: 1.45;
   letter-spacing: -0.025em;
-}
-
-.before-card-caption{
-  margin-top: 20px;
-  padding-top: 12px;
-  border-top: 1px solid var(--border);
-  color: var(--text-tertiary);
-  font-size: 10.5px;
-  line-height: 1.55;
-}
-
-.compile-bridge{
-  display: grid;
-  place-content: center;
-  place-items: center;
-  gap: 6px;
-  color: var(--accent);
-}
-
-.compile-bridge span{
-  writing-mode: vertical-rl;
-  color: var(--text-tertiary);
-  font-size: 9px;
-  font-weight: 750;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.compile-bridge strong{
-  width: 34px;
-  height: 34px;
-  display: grid;
-  place-items: center;
-  border: 1px solid #d8d5fb;
-  border-radius: 50%;
-  background: var(--accent-soft);
-  font-size: 17px;
 }
 
 .workspace-panel{
@@ -1975,10 +1890,6 @@ textarea:focus{
     grid-template-columns: 0.72fr 44px 1.28fr;
   }
 
-  .compile-bridge span{
-    display: none;
-  }
-
   .desktop-workspace{
     grid-template-columns: 1fr 1fr;
   }
@@ -2147,30 +2058,10 @@ textarea:focus{
     grid-template-columns: 1fr;
   }
 
-  .compile-bridge{
-    grid-auto-flow: column;
-    justify-content: center;
-    padding: 1px 0;
-  }
-
-  .compile-bridge span{
-    writing-mode: horizontal-tb;
-  }
-
-  .compile-bridge strong{
-    transform: rotate(90deg);
-  }
-
   .result-status{
     display: grid;
     grid-template-columns: auto 1fr;
     align-items: center;
-  }
-
-  .result-provenance{
-    grid-column: 1 / -1;
-    margin-left: 0;
-    width: fit-content;
   }
 
   .panel-heading,
