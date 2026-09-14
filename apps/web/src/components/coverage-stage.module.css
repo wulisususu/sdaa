@@ -56,3 +56,21 @@
   outline-offset: -2px;
   border-radius: calc(var(--radius-lg) - 2px);
 }
+
+.scrollCard{
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.cardHeader{
+  flex: 0 0 auto;
+}
+
+.cardScrollContent{
+  min-width: 0;
+  padding-bottom: 4px;
+}
