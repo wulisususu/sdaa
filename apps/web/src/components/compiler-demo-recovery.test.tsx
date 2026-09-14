@@ -310,6 +310,144 @@ describe("compiler demo new question and history retention", () => {
   });
 });
 
+describe("compiler demo recent history", () => {
+  test("history lists saved sessions newest-first", async () => {
+    seedActiveSession({ conversationId: "conv-first", stage: "clarify", rawQuestion: "第一个问题" });
+    seedActiveSession({ conversationId: "conv-second", stage: "coverage", rawQuestion: "第二个问题", retrieval });
+
+    await renderDemo();
+    await clickButton(findButton(container as HTMLElement, "历史"));
+
+    const rows = Array.from(container?.querySelectorAll<HTMLButtonElement>(".history-row") ?? []);
+    expect(rows).toHaveLength(2);
+    expect(rows[0]?.textContent).toContain("第二个问题");
+    expect(rows[1]?.textContent).toContain("第一个问题");
+  });
+
+  test("selecting a history row hydrates that session without replaying API calls", async () => {
+    seedActiveSession({ conversationId: "conv-old", stage: "coverage", rawQuestion: "旧问题", retrieval });
+    // Make the newest session a different one so the selection is unambiguous.
+    const newest = seedActiveSession({
+      conversationId: "conv-newest",
+      stage: "clarify",
+      rawQuestion: "最新问题"
+    });
+    expect(newest.conversationId).toBe("conv-newest");
+
+    const fetchSpy = vi.fn();
+    vi.stubGlobal("fetch", fetchSpy);
+    await renderDemo();
+
+    await clickButton(findButton(container as HTMLElement, "历史"));
+    const rows = Array.from(container?.querySelectorAll<HTMLButtonElement>(".history-row") ?? []);
+    const oldRow = rows.find((row) => row.textContent?.includes("旧问题"));
+    expect(oldRow).toBeDefined();
+
+    await clickButton(oldRow as HTMLButtonElement);
+
+    expect(container?.querySelector('[data-stage="coverage"][data-scene-role="stable"]')).not.toBeNull();
+    expect(container?.querySelector(".history-drawer")).toBeNull();
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  test("Escape closes the history drawer", async () => {
+    seedActiveSession();
+    await renderDemo();
+
+    await clickButton(findButton(container as HTMLElement, "历史"));
+    expect(container?.querySelector(".history-drawer")).not.toBeNull();
+
+    await act(async () => {
+      window.dispatchEvent(new window.KeyboardEvent("keydown", { key: "Escape" }));
+    });
+
+    expect(container?.querySelector(".history-drawer")).toBeNull();
+  });
+});
+
+describe("compiler demo continue-last path", () => {
+  const resumeConversationId = "conv-resume";
+
+  function seedResumeCandidate() {
+    const draft = seedActiveSession({
+      conversationId: resumeConversationId,
+      stage: "clarify",
+      rawQuestion: "预算 5000，大学生第一台相机怎么选？"
+    });
+    expect(setActiveConversationId(null)).toBe(true);
+    return draft;
+  }
+
+  test("no active session + recent history shows 继续上次 without auto-hydrating", async () => {
+    const draft = seedResumeCandidate();
+    await renderDemo();
+
+    expect(container?.querySelector('[data-stage="input"][data-scene-role="stable"]')).not.toBeNull();
+    expect(container?.querySelector(".resume-session-card")).not.toBeNull();
+    expect(container?.textContent).toContain(draft.rawQuestion);
+  });
+
+  test("继续上次 hydrates the candidate exact stage", async () => {
+    seedResumeCandidate();
+    await renderDemo();
+
+    await clickButton(findButton(container as HTMLElement, "继续上次"));
+
+    expect(container?.querySelector('[data-stage="clarify"][data-scene-role="stable"]')).not.toBeNull();
+    expect(container?.querySelector(".resume-session-card")).toBeNull();
+  });
+
+  test("新问题 dismisses the resume card but does not delete the stored history item", async () => {
+    seedResumeCandidate();
+    await renderDemo();
+
+    await clickButton(findButton(container as HTMLElement, "新问题"));
+
+    expect(loadQuestionSession(resumeConversationId)).not.toBeNull();
+    expect(container?.querySelector(".resume-session-card")).toBeNull();
+  });
+
+  test("an active session is auto-hydrated without showing the resume card", async () => {
+    seedActiveSession({ conversationId: "conv-active", stage: "clarify" });
+    await renderDemo();
+
+    expect(container?.querySelector('[data-stage="clarify"]')).not.toBeNull();
+    expect(container?.querySelector(".resume-session-card")).toBeNull();
+  });
+
+  test("header 新建问题 keeps prior history available in the drawer", async () => {
+    seedResumeCandidate();
+    await renderDemo();
+
+    await clickButton(findButton(container as HTMLElement, "新建问题"));
+    expect(container?.querySelector(".resume-session-card")).toBeNull();
+
+    await clickButton(findButton(container as HTMLElement, "历史"));
+    const rows = Array.from(container?.querySelectorAll<HTMLButtonElement>(".history-row") ?? []);
+    expect(rows.some((row) => row.textContent?.includes("大学生第一台相机"))).toBe(true);
+  });
+
+  test("history selection re-activates the chosen session", async () => {
+    seedResumeCandidate();
+    await renderDemo();
+
+    await clickButton(findButton(container as HTMLElement, "历史"));
+    await clickButton(container?.querySelector<HTMLButtonElement>(".history-row") as HTMLButtonElement);
+
+    expect(container?.querySelector('[data-stage="clarify"][data-scene-role="stable"]')).not.toBeNull();
+
+    // Re-loading must now auto-hydrate because the selection restored the active pointer.
+    await act(async () => {
+      root?.unmount();
+    });
+    root = undefined;
+    container?.remove();
+    await renderDemo();
+    expect(container?.querySelector('[data-stage="clarify"][data-scene-role="stable"]')).not.toBeNull();
+    expect(container?.querySelector(".resume-session-card")).toBeNull();
+  });
+});
+
 describe("compiler demo legacy migration", () => {
   test("migrates a valid legacy completed session and restores its Result", async () => {
     window.localStorage.setItem(

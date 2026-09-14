@@ -63,7 +63,7 @@ export function CompilerDemo() {
   const [operation, setOperation] = useState<Operation>("idle");
   const [error, setError] = useState<string | null>(null);
   const [copyStatus, setCopyStatus] = useState<CopyStatus>("idle");
-  const [restorableSession, setRestorableSession] = useState<StoredQuestionSessionV2 | null>(null);
+  const [restorableSession, setRestorableSession] = useState<QuestionSessionSummaryV2 | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [recentSessions, setRecentSessions] = useState<QuestionSessionSummaryV2[]>([]);
   const [sceneResetEpoch, setSceneResetEpoch] = useState(0);
@@ -119,8 +119,8 @@ export function CompilerDemo() {
       hydrateQuestionSession(active);
       return;
     }
-    // Task 5 replaces this fallback with the summary-driven resume candidate.
-    setRestorableSession(null);
+    // No active session to auto-hydrate: offer the newest recent session as a secondary path.
+    setRestorableSession(listRecentQuestionSessions()[0] ?? null);
   }, []);
 
   const sessionDraft = useMemo<QuestionSessionDraft | null>(() => {
@@ -284,6 +284,7 @@ export function CompilerDemo() {
     setActiveConversationId(null);
     setConversationId(null);
     setConversationCreatedAt(null);
+    // The blank Input stays usable and the History drawer still lists prior sessions.
     setRestorableSession(null);
     setRawQuestion("");
     setAnswers({});
@@ -297,11 +298,21 @@ export function CompilerDemo() {
   }
 
   function restoreLastSession() {
-    const session = restorableSession;
-    if (!session) return;
+    const candidate = restorableSession;
+    if (!candidate) return;
+    const session = loadQuestionSession(candidate.conversationId);
+    if (!session) {
+      setRestorableSession(null);
+      return;
+    }
     setActiveConversationId(session.conversationId);
     setRestorableSession(null);
     hydrateQuestionSession(session);
+  }
+
+  /** Dismissal is UI-only: it must not delete the stored history entry. */
+  function dismissResumeCandidate() {
+    setRestorableSession(null);
   }
 
   function handleReoptimize() {
@@ -342,9 +353,9 @@ export function CompilerDemo() {
           <>
             {restorableSession && (
               <ResumeSessionCard
-                rawQuestion={restorableSession.rawQuestion}
+                session={restorableSession}
                 onResume={restoreLastSession}
-                onDiscard={handleNewQuestion}
+                onDismiss={dismissResumeCandidate}
               />
             )}
             <InputStage
