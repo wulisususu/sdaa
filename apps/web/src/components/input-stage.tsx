@@ -65,10 +65,6 @@ export function InputStage({
         >
           {loading ? <><span className="button-spinner" aria-hidden="true" />正在理解你的问题…</> : <>开始编译问题 <span aria-hidden="true">→</span></>}
         </button>
-        <div className="input-trust-line">
-          <span><span className="trust-dot" aria-hidden="true" />真实 AI + 知乎检索</span>
-          <span>只整理与复制问题，不会自动发布</span>
-        </div>
       </div>
     </section>
   );

@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  canVisitStage,
   countAnsweredClarifications,
   formatPublishableQuestion,
   getPreviousStage,
@@ -26,7 +25,6 @@ import { CoverageStage } from "./coverage-stage";
 import { DiagnosisStage } from "./diagnosis-stage";
 import { InputStage } from "./input-stage";
 import { ResultStage } from "./result-stage";
-import { StageStepper } from "./stage-stepper";
 import { StageSceneShell } from "./stage-scene-shell";
 
 type CopyStatus = "idle" | "copied" | "error";
@@ -48,7 +46,6 @@ function safeErrorMessage(error: unknown): string {
 
 export function CompilerDemo() {
   const [stage, setStage] = useState<QuestionCompilerStage>("input");
-  const [previousStage, setPreviousStage] = useState<QuestionCompilerStage | null>(null);
   const [maxVisited, setMaxVisited] = useState<QuestionCompilerStage>("input");
   const [rawQuestion, setRawQuestion] = useState("");
   const [answers, setAnswers] = useState<ClarificationAnswers>({});
@@ -69,7 +66,6 @@ export function CompilerDemo() {
 
   function transitionTo(next: QuestionCompilerStage) {
     if (next === stage) return;
-    setPreviousStage(stage);
     setStage(next);
   }
 
@@ -83,12 +79,6 @@ export function CompilerDemo() {
   function cancelPending() {
     requestVersion.current += 1;
     setOperation("idle");
-  }
-
-  function visit(next: QuestionCompilerStage) {
-    if (!canVisitStage(next, maxVisited)) return;
-    if (next !== stage && operation !== "idle") cancelPending();
-    transitionTo(next);
   }
 
   function back() {
@@ -233,18 +223,7 @@ export function CompilerDemo() {
     <main className="app-shell">
       <AppHeader onNewQuestion={handleNewQuestion} />
       <div className="page-container">
-        <section className="page-intro">
-          <div>
-            <span className="eyebrow">知乎 AI 提问编译器</span>
-            <h1>把模糊需求，整理成值得回答的问题</h1>
-            <p>先把问题问清楚，再进入答案世界。</p>
-          </div>
-          <span className="demo-badge">真实链路 · AI + 知乎检索</span>
-        </section>
-
-        <StageSceneShell stage={stage} previousStage={previousStage}>
-          <StageStepper stage={stage} maxVisited={maxVisited} onChange={visit} />
-
+        <StageSceneShell stage={stage} previousStage={null}>
           {stage === "input" && (
           <InputStage rawQuestion={rawQuestion} ready={ready} loading={operation === "analyzing"} error={error} onChange={handleRawQuestionChange} onContinue={handleAnalyze} />
         )}

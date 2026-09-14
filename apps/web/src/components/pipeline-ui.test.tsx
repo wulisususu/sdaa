@@ -7,7 +7,6 @@ import { CompilerDemo } from "./compiler-demo";
 import { CoverageStage } from "./coverage-stage";
 import { DiagnosisStage } from "./diagnosis-stage";
 import { InputStage } from "./input-stage";
-import { StageStepper } from "./stage-stepper";
 
 const evidence = [{
   id: "123",
@@ -56,26 +55,32 @@ describe("real pipeline UI", () => {
     expect(html).toContain("正在理解你的问题…");
   });
 
-  test("input stage explains the evidence and publishing boundary", () => {
+  test("primary compiler removes redundant trust and progress chrome", () => {
+    const html = renderToStaticMarkup(<CompilerDemo />);
+
+    expect(html).not.toContain("真实链路 · AI + 知乎检索");
+    expect(html).not.toContain("真实 AI + 知乎检索");
+    expect(html).not.toContain("只整理与复制问题，不会自动发布");
+    expect(html).not.toContain('class="page-intro"');
+    expect(html).not.toContain('class="demo-badge"');
+    expect(html).not.toContain("stage-stepper");
+    expect(html).not.toContain("mobile-stage-progress");
+  });
+
+  test("input keeps analyze loading feedback without trust footer", () => {
     const html = renderToStaticMarkup(
-      <InputStage rawQuestion="AI 应用开发应该怎么学？" ready onChange={() => undefined} onContinue={() => undefined} />
+      <InputStage
+        rawQuestion="AI 应用开发应该怎么学？"
+        ready
+        loading
+        onChange={() => undefined}
+        onContinue={() => undefined}
+      />
     );
-    expect(html).toContain("真实 AI + 知乎检索");
-    expect(html).toContain("不会自动发布");
-  });
 
-  test("stepper marks earlier visited stages as completed", () => {
-    const html = renderToStaticMarkup(<StageStepper stage="diagnose" maxVisited="diagnose" />);
-    expect(html).toContain("is-completed");
-    expect(html).toContain("✓");
-    expect(html).toContain('aria-current="step"');
-  });
-
-  test("stepper exposes compact mobile progress instead of relying on compressed desktop labels", () => {
-    const html = renderToStaticMarkup(<StageStepper stage="diagnose" maxVisited="diagnose" />);
-    expect(html).toContain("mobile-stage-progress");
-    expect(html).toContain("3 / 5");
-    expect(html).toContain("问题体检");
+    expect(html).toContain("正在理解你的问题…");
+    expect(html).not.toContain("真实 AI + 知乎检索");
+    expect(html).not.toContain("不会自动发布");
   });
 
   test("input and clarification controls expose micro-interaction hooks", () => {
@@ -93,13 +98,6 @@ describe("real pipeline UI", () => {
     expect(input).toContain('data-motion="input"');
     expect(input).toContain('data-motion="primary-action"');
     expect(clarification).toContain('data-motion="option"');
-  });
-
-  test("stepper exposes scene tone and stable motion hooks", () => {
-    const html = renderToStaticMarkup(<StageStepper stage="coverage" maxVisited="coverage" />);
-    expect(html).toContain('data-tone="light"');
-    expect(html).toContain('data-motion="stage-number"');
-    expect(html).toContain('data-motion="headline"');
   });
 
   test("clarification selection has a non-color check indicator", () => {
