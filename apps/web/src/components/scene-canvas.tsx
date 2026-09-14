@@ -19,12 +19,19 @@ export function SceneCanvas({ stage, role, hidden = false, children }: SceneCanv
     "--scene-surface": visual.surface
   } as CSSProperties;
 
+  // During a handoff neither travelling canvas may be reached by pointer OR keyboard.
+  // `inert` removes the subtree from the tab order and from assistive technology, which
+  // `pointer-events: none` alone cannot do. The stable incoming canvas becomes interactive
+  // again as soon as the role flips back to "stable".
+  const isTravelling = role === "outgoing" || role === "incoming";
+
   return (
     <section
       className="scene-canvas"
       data-stage={stage}
       data-scene-role={role}
       aria-hidden={hidden || undefined}
+      inert={isTravelling || undefined}
       style={style}
     >
       <StageBackdrop stage={stage} />

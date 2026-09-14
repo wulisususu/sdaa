@@ -4,7 +4,6 @@ import {
   countAnsweredClarifications,
   formatPublishableQuestion,
   getPreviousStage,
-  getStageIndex,
   isRawQuestionReady,
   setClarificationAnswer,
   type ClarificationAnswers,
@@ -30,14 +29,6 @@ import { StageTransitionViewport } from "./stage-transition-viewport";
 type CopyStatus = "idle" | "copied" | "error";
 type Operation = "idle" | "analyzing" | "retrieving" | "compiling";
 
-export function capVisitedStageAfterAnswer(
-  current: QuestionCompilerStage
-): QuestionCompilerStage {
-  return getStageIndex(current) > getStageIndex("diagnose")
-    ? "diagnose"
-    : current;
-}
-
 function safeErrorMessage(error: unknown): string {
   return error instanceof Error && error.message.trim().length > 0
     ? error.message
@@ -46,7 +37,6 @@ function safeErrorMessage(error: unknown): string {
 
 export function CompilerDemo() {
   const [stage, setStage] = useState<QuestionCompilerStage>("input");
-  const [maxVisited, setMaxVisited] = useState<QuestionCompilerStage>("input");
   const [rawQuestion, setRawQuestion] = useState("");
   const [answers, setAnswers] = useState<ClarificationAnswers>({});
   const [analysis, setAnalysis] = useState<QuestionAnalysis | null>(null);
@@ -70,13 +60,6 @@ export function CompilerDemo() {
     setStage(next);
   }
 
-  function markVisited(next: QuestionCompilerStage) {
-    transitionTo(next);
-    setMaxVisited((current) =>
-      getStageIndex(next) > getStageIndex(current) ? next : current
-    );
-  }
-
   function cancelPending() {
     requestVersion.current += 1;
     setOperation("idle");
@@ -98,7 +81,6 @@ export function CompilerDemo() {
     setCopyStatus("idle");
     setError(null);
     transitionTo("input");
-    setMaxVisited("input");
   }
 
   async function handleAnalyze() {
@@ -114,7 +96,7 @@ export function CompilerDemo() {
       setRetrieval(null);
       setCompiled(null);
       setCopyStatus("idle");
-      markVisited("clarify");
+      transitionTo("clarify");
     } catch (nextError) {
       if (version === requestVersion.current) setError(safeErrorMessage(nextError));
     } finally {
@@ -128,13 +110,12 @@ export function CompilerDemo() {
     setCompiled(null);
     setCopyStatus("idle");
     setError(null);
-    setMaxVisited((current) => capVisitedStageAfterAnswer(current));
   }
 
   function handleClarifyContinue() {
     if (!analysis) return;
     setError(null);
-    markVisited("diagnose");
+    transitionTo("diagnose");
   }
 
   async function handleRetrieve() {
@@ -152,7 +133,7 @@ export function CompilerDemo() {
       setRetrieval(nextRetrieval);
       setCompiled(null);
       setCopyStatus("idle");
-      markVisited("coverage");
+      transitionTo("coverage");
     } catch (nextError) {
       if (version === requestVersion.current) setError(safeErrorMessage(nextError));
     } finally {
@@ -175,7 +156,7 @@ export function CompilerDemo() {
       if (version !== requestVersion.current) return;
       setCompiled(nextCompiled);
       setCopyStatus("idle");
-      markVisited("result");
+      transitionTo("result");
     } catch (nextError) {
       if (version === requestVersion.current) setError(safeErrorMessage(nextError));
     } finally {
@@ -203,7 +184,6 @@ export function CompilerDemo() {
     setError(null);
     setCopyStatus("idle");
     transitionTo("input");
-    setMaxVisited("input");
     setSceneResetEpoch((value) => value + 1);
   }
 
@@ -214,7 +194,6 @@ export function CompilerDemo() {
     setError(null);
     setCopyStatus("idle");
     transitionTo("clarify");
-    setMaxVisited("diagnose");
   }
 
   function handleOpenZhihu() {
@@ -285,7 +264,6 @@ export function CompilerDemo() {
             copyStatus={copyStatus}
             onCopy={handleCopy}
             onReoptimize={handleReoptimize}
-            onNewQuestion={handleNewQuestion}
             onOpenZhihu={handleOpenZhihu}
           />
         ) : null;

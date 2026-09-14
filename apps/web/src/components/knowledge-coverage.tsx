@@ -1,7 +1,7 @@
 "use client";
 
 import type { KnowledgeCoverageItem, SearchEvidenceItem } from "@ask-better/domain";
-import { useState, type CSSProperties } from "react";
+import { useRef, useState, type CSSProperties } from "react";
 import { EvidenceDrawer } from "./evidence-drawer";
 
 interface KnowledgeCoverageProps {
@@ -20,6 +20,7 @@ export const EVIDENCE_PREVIEW_LIMIT = 4;
 
 export function KnowledgeCoverage({ items, evidence }: KnowledgeCoverageProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const toggleRef = useRef<HTMLButtonElement>(null);
   const previewEvidence = evidence.slice(0, EVIDENCE_PREVIEW_LIMIT);
 
   return (
@@ -84,6 +85,7 @@ export function KnowledgeCoverage({ items, evidence }: KnowledgeCoverageProps) {
           </div>
           {evidence.length > EVIDENCE_PREVIEW_LIMIT && (
             <button
+              ref={toggleRef}
               type="button"
               className="evidence-toggle"
               onClick={() => setDrawerOpen(true)}
@@ -97,6 +99,7 @@ export function KnowledgeCoverage({ items, evidence }: KnowledgeCoverageProps) {
       <EvidenceDrawer
         open={drawerOpen}
         items={evidence}
+        restoreFocusTo={toggleRef}
         onClose={() => setDrawerOpen(false)}
       />
     </section>

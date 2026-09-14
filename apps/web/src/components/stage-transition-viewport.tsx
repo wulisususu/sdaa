@@ -6,11 +6,7 @@ import { gsap } from "gsap";
 import { useCallback, useRef, useState, type ReactNode } from "react";
 
 import { SceneCanvas } from "./scene-canvas";
-import {
-  getSceneTransitionDirection,
-  type SceneSnapshot,
-  type SceneTransitionPair
-} from "./stage-transition-model";
+import { getSceneTransitionDirection, type SceneTransitionDirection } from "./stage-transition-model";
 
 gsap.registerPlugin(useGSAP);
 
@@ -27,23 +23,48 @@ export interface StageTransitionViewportProps {
   resetEpoch: number;
 }
 
+/**
+ * A mounted scene. `id` is the React key AND the reconciliation identity: the same scene
+ * keeps the same id while its role changes, so React updates the existing
+ * `SceneCanvas` element instead of remounting the stage subtree.
+ *
+ * This matters because the outgoing scene must preserve real component/DOM state (e.g. a
+ * Clarify question index, an open `<details>`) for the whole exit animation. Rebuilding the
+ * outgoing canvas from a re-rendered ReactNode would lose that state.
+ */
+export interface MountedScene {
+  id: number;
+  stage: QuestionCompilerStage;
+  content: ReactNode;
+}
+
 export interface SceneTransitionLayersProps {
-  pair: SceneTransitionPair;
+  scenes: { current: MountedScene; incoming: MountedScene | null };
+  direction: SceneTransitionDirection;
+  renderScene: (scene: MountedScene, role: "stable" | "outgoing" | "incoming") => ReactNode;
 }
 
 /**
- * Renders both complete canvases of a handoff. Kept as a pure function so the
- * outgoing/incoming coexistence contract is testable without GSAP.
+ * Renders the mounted scene (plus the incoming sibling during a handoff). Kept as a pure
+ * function so the coexistence contract and scene identity are testable without GSAP.
  */
-export function SceneTransitionLayers({ pair }: SceneTransitionLayersProps) {
+export function SceneTransitionLayers({
+  scenes,
+  direction,
+  renderScene
+}: SceneTransitionLayersProps) {
+  if (scenes.incoming === null) {
+    return (
+      <div className="scene-transition-layers" data-transition-direction="idle">
+        {renderScene(scenes.current, "stable")}
+      </div>
+    );
+  }
+
   return (
-    <div className="scene-transition-layers" data-transition-direction={pair.direction}>
-      <SceneCanvas stage={pair.outgoing.stage} role="outgoing" hidden>
-        {pair.outgoing.content}
-      </SceneCanvas>
-      <SceneCanvas stage={pair.incoming.stage} role="incoming">
-        {pair.incoming.content}
-      </SceneCanvas>
+    <div className="scene-transition-layers" data-transition-direction={direction}>
+      {renderScene(scenes.current, "outgoing")}
+      {renderScene(scenes.incoming, "incoming")}
     </div>
   );
 }
@@ -58,42 +79,60 @@ export function StageTransitionViewport({
   resetEpoch
 }: StageTransitionViewportProps) {
   const rootRef = useRef<HTMLDivElement>(null);
-  const [displayedStage, setDisplayedStage] = useState(targetStage);
-  const [pair, setPair] = useState<SceneTransitionPair | null>(null);
-  const stableSnapshotRef = useRef<SceneSnapshot>({ stage: targetStage, content: scene });
+  // Monotonic id source; each mounted scene keeps its id for as long as it is mounted.
+  const nextSceneId = useRef(1);
+  const [scenes, setScenes] = useState<{ current: MountedScene; incoming: MountedScene | null }>(
+    () => ({
+      current: { id: 0, stage: targetStage, content: scene },
+      incoming: null
+    })
+  );
 
-  // Keep the previous rendered ReactNode so the outgoing canvas can outlive the
-  // state that produced it (needed when Result reoptimizes into Clarify).
-  if (pair === null) {
-    stableSnapshotRef.current =
-      targetStage === displayedStage
-        ? { stage: targetStage, content: scene }
-        : stableSnapshotRef.current;
-  }
+  const isTransitioning = scenes.incoming !== null;
 
-  if (pair === null && targetStage !== displayedStage) {
-    setPair({
-      outgoing: stableSnapshotRef.current,
-      incoming: { stage: targetStage, content: scene },
-      direction: getSceneTransitionDirection(displayedStage, targetStage)
+  if (!isTransitioning && targetStage !== scenes.current.stage) {
+    // Entering a handoff: the currently mounted scene becomes the outgoing scene by keeping
+    // its id and therefore its identity; the incoming scene is added as a sibling.
+    setScenes({
+      current: {
+        id: scenes.current.id,
+        stage: scenes.current.stage,
+        // Freeze the exact element React already reconciled for this scene.
+        content: scenes.current.content
+      },
+      incoming: {
+        id: nextSceneId.current++,
+        stage: targetStage,
+        content: scene
+      }
     });
+  } else if (!isTransitioning && targetStage === scenes.current.stage) {
+    // Stable: keep rendering live content so typing, selection and copy status stay current.
+    const nextContent = scene;
+    if (scenes.current.content !== nextContent || scenes.current.stage !== targetStage) {
+      setScenes({
+        current: { id: scenes.current.id, stage: targetStage, content: nextContent },
+        incoming: null
+      });
+    }
   }
 
   const handleHandoffComplete = useCallback(() => {
-    setPair((currentPair) => {
-      if (currentPair === null) return null;
-      stableSnapshotRef.current = {
-        stage: currentPair.incoming.stage,
-        content: currentPair.incoming.content
-      };
-      setDisplayedStage(currentPair.incoming.stage);
-      return null;
+    setScenes((previous) => {
+      if (previous.incoming === null) return previous;
+      // The incoming scene becomes the new stable scene with the SAME id, so React keeps its
+      // DOM node and local state instead of remounting it.
+      return { current: previous.incoming, incoming: null };
     });
   }, []);
 
+  const direction = scenes.incoming
+    ? getSceneTransitionDirection(scenes.current.stage, scenes.incoming.stage)
+    : "forward";
+
   useGSAP(
     () => {
-      if (pair === null) return;
+      if (scenes.incoming === null) return;
 
       const outgoing = rootRef.current?.querySelector<HTMLElement>(
         '[data-scene-role="outgoing"]'
@@ -105,7 +144,7 @@ export function StageTransitionViewport({
       if (!outgoing || !incoming) return;
 
       const headlines = incoming.querySelectorAll<HTMLElement>('[data-motion="headline"]');
-      const sign = pair.direction === "forward" ? 1 : -1;
+      const sign = direction === "forward" ? 1 : -1;
       const media = gsap.matchMedia();
 
       media.add("(prefers-reduced-motion: no-preference)", () => {
@@ -167,18 +206,20 @@ export function StageTransitionViewport({
 
       return () => media.revert();
     },
-    { scope: rootRef, dependencies: [pair], revertOnUpdate: true }
+    { scope: rootRef, dependencies: [scenes], revertOnUpdate: true }
   );
 
   return (
     <div className="scene-transition-viewport" ref={rootRef} data-reset-epoch={resetEpoch}>
-      {pair === null ? (
-        <SceneCanvas stage={stableSnapshotRef.current.stage} role="stable">
-          {stableSnapshotRef.current.content}
-        </SceneCanvas>
-      ) : (
-        <SceneTransitionLayers pair={pair} />
-      )}
+      <SceneTransitionLayers
+        scenes={scenes}
+        direction={direction}
+        renderScene={(mounted, role) => (
+          <SceneCanvas key={mounted.id} stage={mounted.stage} role={role} hidden={role === "outgoing"}>
+            {mounted.content}
+          </SceneCanvas>
+        )}
+      />
     </div>
   );
 }

@@ -10,7 +10,6 @@ interface ResultStageProps {
   copyStatus: "idle" | "copied" | "error";
   onCopy: () => void;
   onReoptimize: () => void;
-  onNewQuestion: () => void;
   onOpenZhihu: () => void;
 }
 
@@ -23,7 +22,6 @@ export function ResultStage({
   copyStatus,
   onCopy,
   onReoptimize,
-  onNewQuestion,
   onOpenZhihu
 }: ResultStageProps) {
   return (
@@ -85,11 +83,6 @@ export function ResultStage({
           onReoptimize={onReoptimize}
           onOpenZhihu={onOpenZhihu}
         />
-      </div>
-
-      <div className="result-footer-actions" data-motion="result-actions">
-        <span>还想整理另一个问题？</span>
-        <button className="ghost-button" type="button" onClick={onNewQuestion}>新建一个问题</button>
       </div>
     </section>
   );

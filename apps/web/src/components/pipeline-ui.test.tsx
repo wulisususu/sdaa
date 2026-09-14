@@ -6,7 +6,11 @@ import { CompiledQuestionPanel } from "./compiled-question-panel";
 import { CompilerDemo } from "./compiler-demo";
 import { CoverageStage } from "./coverage-stage";
 import { DiagnosisStage } from "./diagnosis-stage";
-import { EvidenceDrawer } from "./evidence-drawer";
+import {
+  EvidenceDrawerContent,
+  getInitialFocusIndex,
+  getTrappedFocusIndex
+} from "./evidence-drawer";
 import { InputStage } from "./input-stage";
 import { KnowledgeCoverage } from "./knowledge-coverage";
 
@@ -222,12 +226,42 @@ describe("real pipeline UI", () => {
 
   test("evidence drawer exposes bounded dialog semantics", () => {
     const html = renderToStaticMarkup(
-      <EvidenceDrawer open items={makeEvidence(2)} onClose={() => undefined} />
+      <EvidenceDrawerContent items={makeEvidence(2)} onClose={() => undefined} />
     );
 
     expect(html).toContain('role="dialog"');
     expect(html).toContain('aria-modal="true"');
+    expect(html).toContain('aria-label="全部参考来源"');
     expect(html).toContain("全部参考来源");
+    expect(html).toContain("证据 1");
+  });
+
+  test("evidence drawer keeps the full list in an internally scrolling region", () => {
+    const html = renderToStaticMarkup(
+      <EvidenceDrawerContent items={makeEvidence(6)} onClose={() => undefined} />
+    );
+
+    expect(html).toContain("evidence-drawer-scroll");
+    expect((html.match(/class="evidence-source-item"/g) ?? []).length).toBe(6);
+  });
+
+  test("evidence drawer traps Tab and Shift+Tab inside the dialog", () => {
+    // 3 focusables: indices 0..2
+    expect(getTrappedFocusIndex(3, 0, false)).toBe(1);
+    expect(getTrappedFocusIndex(3, 1, false)).toBe(2);
+    expect(getTrappedFocusIndex(3, 2, false)).toBe(0); // wraps forward
+    expect(getTrappedFocusIndex(3, 0, true)).toBe(2);  // wraps backward
+    expect(getTrappedFocusIndex(3, 1, true)).toBe(0);
+    // Focus outside the dialog is pulled back to an edge instead of escaping.
+    expect(getTrappedFocusIndex(3, -1, false)).toBe(0);
+    expect(getTrappedFocusIndex(3, -1, true)).toBe(2);
+    // Nothing focusable: caller prevents the default rather than moving focus.
+    expect(getTrappedFocusIndex(0, -1, false)).toBe(-1);
+  });
+
+  test("evidence drawer takes initial focus inside the dialog", () => {
+    expect(getInitialFocusIndex(7)).toBe(0);
+    expect(getInitialFocusIndex(0)).toBe(-1);
   });
 
   test("input exposes one explicit primary headline motion hook", () => {
