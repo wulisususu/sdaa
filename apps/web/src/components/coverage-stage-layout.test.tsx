@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import { CoverageScrollRegion } from "./coverage-scroll-region";
 import { KnowledgeCoverage } from "./knowledge-coverage";
+import { KnowledgeGap } from "./knowledge-gap";
 
 function makeEvidence(count: number) {
   return Array.from({ length: count }, (_, index) => ({
@@ -54,6 +55,24 @@ describe("Coverage scroll regions", () => {
     expect(html).toContain("已有主题");
     expect(html).toContain("本次参考来源");
     expect(html).toContain("查看全部 6 条参考来源");
+    expect((html.match(/data-coverage-scroll-region=/g) ?? []).length).toBe(1);
+  });
+
+  test("right knowledge-gap card owns its own scroll region", () => {
+    const html = renderToStaticMarkup(
+      <KnowledgeGap
+        items={[
+          {
+            id: "gap-1",
+            title: "仍值得追问",
+            detail: "当前检索没有覆盖这个细节"
+          }
+        ]}
+      />
+    );
+
+    expect(html).toContain('aria-label="还值得继续问什么"');
+    expect(html).toContain("仍值得追问");
     expect((html.match(/data-coverage-scroll-region=/g) ?? []).length).toBe(1);
   });
 });
