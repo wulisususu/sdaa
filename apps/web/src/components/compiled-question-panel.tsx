@@ -38,17 +38,20 @@ export function CompiledQuestionPanel({
       </div>
 
       <div className="panel-content">
-        <article className="compiled-card publishable-card">
-          <span className="compiled-label">最终标题</span>
-          <h3>{publishableQuestion.title}</h3>
-          <p className="publishable-context">{publishableQuestion.context}</p>
-          <div className="expected-answer-block publishable-questions-block">
-            <span className="compiled-label">想请教</span>
-            <ol className="publishable-question-list">
-              {publishableQuestion.questions.map((item) => <li key={item}>{item}</li>)}
-            </ol>
-          </div>
-        </article>
+        {/* Only the long publishable body may scroll internally; the primary CTA stays outside. */}
+        <div className="compiled-publishable-scroll">
+          <article className="compiled-card publishable-card">
+            <span className="compiled-label">最终标题</span>
+            <h3>{publishableQuestion.title}</h3>
+            <p className="publishable-context">{publishableQuestion.context}</p>
+            <div className="expected-answer-block publishable-questions-block">
+              <span className="compiled-label">想请教</span>
+              <ol className="publishable-question-list">
+                {publishableQuestion.questions.map((item) => <li key={item}>{item}</li>)}
+              </ol>
+            </div>
+          </article>
+        </div>
 
         <details className="compiler-details">
           <summary>查看编译细节 <span>Question IR</span></summary>

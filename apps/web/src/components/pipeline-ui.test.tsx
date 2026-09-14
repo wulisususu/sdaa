@@ -48,7 +48,7 @@ describe("real pipeline UI", () => {
   test("initial compiler no longer presents mock data", () => {
     const html = renderToStaticMarkup(<CompilerDemo />);
     expect(html).toContain('data-stage="input"');
-    expect(html).toContain("知乎 AI 提问编译器");
+    expect(html).toContain("01 / 05 · INPUT");
     expect(html).not.toContain("Mock Data");
     expect(html).not.toContain(">现在转码还有前途吗？</textarea>");
   });
@@ -228,6 +228,19 @@ describe("real pipeline UI", () => {
     expect(html).toContain('role="dialog"');
     expect(html).toContain('aria-modal="true"');
     expect(html).toContain("全部参考来源");
+  });
+
+  test("input exposes one explicit primary headline motion hook", () => {
+    const html = renderToStaticMarkup(
+      <InputStage
+        rawQuestion="AI 应用开发应该怎么学？"
+        ready
+        onChange={() => undefined}
+        onContinue={() => undefined}
+      />
+    );
+
+    expect(html).toContain('<h2 data-motion="headline">你真正想问什么？</h2>');
   });
 
   test("result panel prioritizes the publishable question and keeps IR collapsible", () => {

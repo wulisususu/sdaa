@@ -84,7 +84,7 @@ export function ClarificationStage({
         <div className="flow-heading flow-heading-split">
           <div>
             <span className="section-kicker">02 / 05 · CLARIFY</span>
-            <h2>把真正会影响答案的条件补完整</h2>
+            <h2 data-motion="headline">把真正会影响答案的条件补完整</h2>
             <small>高信息增益，只问关键条件</small>
           </div>
         </div>

@@ -28,6 +28,14 @@ export function ResultStage({
 }: ResultStageProps) {
   return (
     <section className="flow-stage flow-stage-wide result-stage">
+      <div className="flow-heading stage-section-heading">
+        <div>
+          <span className="section-kicker">05 / 05 · COMPILED</span>
+          <h2 data-motion="headline">这个问题现在可以拿去问了</h2>
+          <small>Before → After</small>
+        </div>
+      </div>
+
       <div className="result-status" role="status">
         <span className="result-check" aria-hidden="true">✓</span>
         <div className="result-status-copy">

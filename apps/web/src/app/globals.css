@@ -610,6 +610,12 @@ textarea:focus-visible{
   white-space: nowrap;
 }
 
+.compiled-publishable-scroll{
+  max-height: min(46dvh, 430px);
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
 /* Input */
 .input-stage-card{
   position: relative;

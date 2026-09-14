@@ -26,8 +26,8 @@ export function InputStage({
       <div className="flow-card input-stage-card">
         <div className="flow-heading input-hero-heading">
           <div>
-            <span className="section-kicker">知乎 AI 提问编译器</span>
-            <h2>你真正想问什么？</h2>
+            <span className="section-kicker">01 / 05 · INPUT</span>
+            <h2 data-motion="headline">你真正想问什么？</h2>
           </div>
         </div>
         <label className="sr-only" htmlFor="flow-question">你想整理的问题</label>

@@ -47,8 +47,8 @@ export function DiagnosisStage({
         <div className="flow-card diagnosis-findings-card">
           <div className="flow-heading flow-heading-split">
             <div>
-              <span className="section-kicker">Question Diagnostics</span>
-              <h2>发现 {diagnostics.length} 个值得优化的地方</h2>
+              <span className="section-kicker">03 / 05 · DIAGNOSE</span>
+              <h2 data-motion="headline">发现 {diagnostics.length} 个值得优化的地方</h2>
               <small>不是语法错误，而是可能影响回答质量的信息问题</small>
             </div>
             <span className="diagnostic-count-meta">{diagnostics.length} 项发现</span>
