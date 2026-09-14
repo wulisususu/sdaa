@@ -10,6 +10,7 @@ interface ResultStageProps {
   copyStatus: "idle" | "copied" | "error";
   onCopy: () => void;
   onReoptimize: () => void;
+  onNewQuestion: () => void;
   onOpenZhihu: () => void;
 }
 
@@ -22,6 +23,7 @@ export function ResultStage({
   copyStatus,
   onCopy,
   onReoptimize,
+  onNewQuestion,
   onOpenZhihu
 }: ResultStageProps) {
   return (
@@ -81,6 +83,7 @@ export function ResultStage({
           copyStatus={copyStatus}
           onCopy={onCopy}
           onReoptimize={onReoptimize}
+          onNewQuestion={onNewQuestion}
           onOpenZhihu={onOpenZhihu}
         />
       </div>
