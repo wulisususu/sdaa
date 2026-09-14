@@ -1,0 +1,170 @@
+.scrollFrame{
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+}
+
+.scrollFrame::before,
+.scrollFrame::after{
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 3;
+  height: 28px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 140ms ease;
+}
+
+.scrollFrame::before{
+  top: 0;
+  background: linear-gradient(to bottom, var(--surface), transparent);
+}
+
+.scrollFrame::after{
+  bottom: 0;
+  background: linear-gradient(to top, var(--surface), transparent);
+}
+
+.scrollFrame[data-shadow-top="true"]::before,
+.scrollFrame[data-shadow-bottom="true"]::after{
+  opacity: 1;
+}
+
+.scrollRegion{
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.scrollRegion::-webkit-scrollbar{
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+.scrollRegion:focus-visible{
+  outline: 2px solid var(--focus-ring);
+  outline-offset: -2px;
+  border-radius: calc(var(--radius-lg) - 2px);
+}
+
+.scrollCard{
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.cardHeader{
+  flex: 0 0 auto;
+}
+
+.cardScrollContent{
+  min-width: 0;
+  padding-bottom: 4px;
+}
+
+.coverageStage{
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.coverageGrid{
+  flex: 1 1 auto !important;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden !important;
+  align-content: stretch !important;
+  align-items: stretch !important;
+}
+
+.footerStack{
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+.actionBar{
+  margin-top: 10px !important;
+}
+
+/*
+ * Coverage-only scene geometry.
+ * Do not modify SceneCanvas/StageTransitionViewport/globals.css.
+ * Apply identically to stable/incoming/outgoing roles.
+ *
+ * Breakpoint: 1024px is the narrowest desktop width the coverage stage must keep to a single
+ * viewport, so the bounded layout starts there. `globals.css` collapses `.knowledge-grid` to one
+ * column below 1280px, and inside a fixed-height box that would stack the two cards and leave each
+ * internal scroll window about 160px tall — measured at 1024x768. The coverage stage therefore
+ * pins the desktop two-column grid for itself in the same range (1024px is still wide enough for
+ * both columns to hold real content: ~540px + ~375px). Below 1024px — small tablets and phones —
+ * the stage keeps the ordinary scrollable canvas, where page scrolling is expected.
+ *
+ * The definite-row declaration below is load-bearing, not cosmetic. `globals.css` lays the safe
+ * frame out as `display: grid; grid-template-rows: min-content; align-content: start`, and a grid
+ * row sized by `min-content` is indefinite — so `height: 100%` on `.scene-content` (and therefore
+ * every `height: 100%` below it) silently resolves to `auto`. With production-shaped retrieval
+ * data the Coverage scene then grew to its full content height (1096px inside an 828px canvas),
+ * the inner scroll regions never became scrollable, and the footer plus the primary CTA ended up
+ * 263px below the fold. `minmax(0, 1fr)` makes the row definite so the percentage chain resolves
+ * and the overflow lands in the card scroll regions where it belongs.
+ *
+ * Note that the canvas keeps `overflow-y: auto` from `globals.css` on purpose. Forcing `hidden`
+ * here would mean that any future overflow is silently clipped — which is how the CTA became
+ * unreachable in the first place. With `auto` the measured overflow is 0 at every tested desktop
+ * size (no scrollbar appears), and if the geometry ever regresses the worst case is a scrollbar
+ * instead of a lost primary action.
+ */
+@media (min-width: 1024px){
+  .coverageGrid{
+    grid-template-columns: minmax(0, 1.18fr) minmax(280px, 0.82fr) !important;
+  }
+
+  :global(.scene-canvas[data-stage="coverage"] .scene-safe-frame){
+    height: 100%;
+    min-height: 0;
+    grid-template-rows: minmax(0, 1fr);
+    align-content: stretch;
+  }
+
+  :global(.scene-canvas[data-stage="coverage"] .scene-content){
+    height: 100%;
+    min-height: 0;
+  }
+}
+
+@media (max-width: 767px){
+  .coverageStage{
+    height: auto;
+    overflow: visible;
+  }
+
+  .coverageGrid{
+    overflow: visible !important;
+  }
+
+  .scrollCard{
+    min-height: 320px;
+    height: auto;
+  }
+
+  .scrollFrame{
+    min-height: 240px;
+  }
+}

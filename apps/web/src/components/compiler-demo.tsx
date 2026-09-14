@@ -202,6 +202,18 @@ export function CompilerDemo() {
 
   async function handleRetrieve() {
     if (!analysis || operation !== "idle") return;
+
+    // Revisiting Coverage must not re-run Retrieve. `retrieval` is the single authoritative copy
+    // owned by this component, and every input it depends on clears it (raw question, Analyze,
+    // clarification answer, New Question, re-optimize), so a non-null value is always consistent
+    // with the current analysis and answers. Backing out to Diagnose deliberately keeps it, which
+    // is what makes this return safe — no cache, fingerprint or second store is involved.
+    if (retrieval) {
+      setError(null);
+      transitionTo("coverage");
+      return;
+    }
+
     const version = ++requestVersion.current;
     setOperation("retrieving");
     setError(null);
