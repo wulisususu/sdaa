@@ -190,27 +190,150 @@ a{
   pointer-events: none;
 }
 
+/* The safe frame is the only vertical scroll container. Content is centered when it fits
+   and top-aligned when it does not, so the top of a stage can never be clipped away. */
 .scene-safe-frame{
   position: relative;
   z-index: 2;
   width: min(1320px, calc(100% - 96px));
   height: 100%;
   margin: 0 auto;
-  padding: 40px 0;
+  padding: 24px 0;
   display: grid;
-  align-items: center;
+  justify-items: stretch;
+  align-content: start;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+}
+
+/* Short compositions still read as a centered scene. */
+.scene-canvas[data-scene-role="stable"] .scene-safe-frame{
+  align-content: center;
+  padding-block: 40px;
 }
 
 .scene-content{
   min-width: 0;
   min-height: 0;
-  max-height: 100%;
+}
+
+/* Wide stages pin their action rows to the bottom of the scene and scroll only the
+   information region above them, so the primary action is always reachable without
+   the document (or the scene frame) scrolling as a whole. */
+.scene-content > .flow-stage-wide{
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.scene-content > .flow-stage-wide > .stage-action-bar{
+  margin-top: auto;
+}
+
+.scene-content > .flow-stage-wide > .flow-heading,
+.scene-content > .flow-stage-wide > .retrieval-status,
+.scene-content > .flow-stage-wide > .result-status,
+.scene-content > .flow-stage-wide > .result-evidence-note,
+.scene-content > .flow-stage-wide > .result-warning-list{
+  flex: 0 0 auto;
+}
+
+/* The information region absorbs the leftover height and scrolls as a whole, while the
+   action row below stays pinned to the scene. */
+/* The comparison region may grow with its content, but it is bounded by a viewport budget so
+   the publishable column and its CTAs stay on screen; the region scrolls when it must.
+   Grid children keep their natural (min-content) height — no min-height:0 here, which would
+   let the publishable column be compressed below its usable height. */
+.scene-content > .flow-stage-wide > .knowledge-grid,
+.scene-content > .flow-stage-wide > .before-after-grid,
+.scene-content > .flow-stage-wide > .diagnosis-layout{
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  align-content: start;
+}
+
+.scene-content > .flow-stage-wide > .before-after-grid{
+  max-height: min(62dvh, max(340px, calc(100dvh - 520px)));
+}
+
+/* The compiled panel keeps its primary CTAs reachable while only its body scrolls.
+   The body must be the shrinking flex item: without flex:1 1 auto + min-height:0 on
+   .panel-content, the body's content escapes the panel and pushes the CTA out of view. */
+.compiled-panel{
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.compiled-panel > .panel-heading{
+  flex: 0 0 auto;
+}
+
+.compiled-panel > .panel-content{
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.compiled-panel > .panel-content > .compiled-panel-body{
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  align-content: start;
+}
+
+.compiled-panel > .panel-content > .compiled-actions{
+  flex: 0 0 auto;
+  margin-top: auto;
+}
+
+.compiled-panel > .panel-content > .publish-hint{
+  flex: 0 0 auto;
+}
+
+.compiled-panel-body{
+  display: grid;
+  gap: 12px;
+}
+
+/* Guarantees a usable publishable area even on compact landscape viewports. */
+.scene-content > .flow-stage-wide > .before-after-grid > .compiled-panel{
+  min-height: 240px;
+}
+
+/* The Result footer duplicates the persistent header's 新建问题 action, and on compact
+   landscape heights it competed with the primary CTAs for the same viewport budget. */
+.result-stage > .result-footer-actions{
+  display: none;
+}
+
+/* Coverage can return 20+ evidence items and Result carries a long comparison surface.
+   These caps keep them from towering over the pinned action rows. */
+.knowledge-grid{
+  max-height: min(60dvh, 660px);
+  overscroll-behavior: contain;
+}
+
+.before-after-grid{
+  max-height: calc(100dvh - 300px);
+  overscroll-behavior: contain;
 }
 
 @media (max-height: 800px) and (min-width: 768px){
   .scene-safe-frame{
     width: min(1240px, calc(100% - 48px));
-    padding-block: 20px;
+    padding-block: 16px;
+  }
+
+  .knowledge-grid{
+    max-height: min(56dvh, 520px);
   }
 
   .flow-card{

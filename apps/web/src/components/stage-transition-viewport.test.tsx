@@ -85,7 +85,32 @@ describe("scene transition system", () => {
     const source = readFileSync("src/components/stage-transition-viewport.tsx", "utf8");
 
     expect(source).toContain("prefers-reduced-motion: reduce");
-    expect(source).toContain("matchMedia");
+    expect(source).toMatch(/matchMedia/);
     expect(source).toContain("28");
+  });
+
+  test("scene safe frame scrolls instead of clipping primary actions", () => {
+    const css = readFileSync("src/app/globals.css", "utf8");
+    const frame = css.slice(css.indexOf(".scene-safe-frame{"));
+    const frameRule = frame.slice(0, frame.indexOf("}"));
+
+    // Content taller than the frame must be reachable: top-aligned and scrollable,
+    // never vertically centered into a clipped, unreachable state.
+    expect(frameRule).toContain("align-content: start");
+    expect(frameRule).toContain("overflow-y: auto");
+    // Short compositions are still centered.
+    expect(css).toContain('.scene-canvas[data-scene-role="stable"] .scene-safe-frame{');
+
+    // Long compositions are bounded so the primary action row stays inside the viewport.
+    const grid = css.slice(css.indexOf(".knowledge-grid{"));
+    expect(grid.slice(0, grid.indexOf("}"))).toContain("max-height");
+
+    const comparison = css.slice(css.indexOf(".scene-content > .flow-stage-wide > .before-after-grid{"));
+    const comparisonRule = comparison.slice(0, comparison.indexOf("}"));
+    expect(comparisonRule).toContain("max-height");
+    expect(css).toContain("min-height: 240px");
+
+    // The compiled panel keeps its CTAs outside the scrolling body.
+    expect(css).toContain(".compiled-panel-body{");
   });
 });
