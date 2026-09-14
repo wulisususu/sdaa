@@ -9,6 +9,9 @@ coverage
 *.log
 .DS_Store
 
+# Verification captures (viewport / transition evidence), not product artifacts
+shots
+
 # typescript / next generated
 next-env.d.ts
 *.tsbuildinfo

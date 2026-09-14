@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "prestart": "node scripts/ensure-prerender-manifest.mjs",
     "start": "next start",
     "test": "vitest run",
     "typecheck": "tsc --noEmit"
