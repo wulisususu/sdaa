@@ -100,6 +100,15 @@
   flex-direction: column;
 }
 
+/* `globals.css` plays `result-before-dim` on `[data-motion="before"]` with fill-mode `both`, which
+   would freeze this column at `opacity: 0.38; transform: scale(0.94)` — the intended "ghost before"
+   look for the old three-card layout. Inside one unified panel a permanently dimmed, shrunken
+   column reads as a rendering bug, and its 6% shrink pulls the divider off the column join, so both
+   sections are equal peers here; the hook survives for the tests that assert it. */
+.originalColumn[data-motion="before"]{
+  animation: none;
+}
+
 .publishColumn{
   position: relative;
   padding-left: 18px;
@@ -303,11 +312,18 @@
     outline-offset: -2px;
   }
 
-  /* The footer is the last thing in the column, so when the column scrolls the four actions stay one
-     Tab away from the scroll region instead of being clipped by the panel edge. */
+  /* The footer is sticky inside the scrolling column, so the four actions stay on screen no matter
+     how long the publishable text is: `bottom: 0` pins them to the column's scrollport and the
+     opaque background stops scrolled content from showing through behind them. Below 1024px the
+     column is not the scroller (the canvas page-scrolls), so sticky is not needed there. */
   :global(.scene-canvas[data-stage="result"]) .publishColumn > :global(.result-footer){
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    margin-left: -18px;
+    padding: 10px 0 0 18px;
+    background: #fff;
     border-top: 1px solid var(--border);
-    padding-top: 10px;
   }
 
   /* Neutralise the viewport-relative peek-hole: `min(46dvh, 430px)` is a budget for the whole

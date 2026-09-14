@@ -10,6 +10,7 @@ const panelSource = readFileSync(
   new URL("./compiled-question-panel.tsx", import.meta.url),
   "utf8"
 );
+const globalsCss = readFileSync(new URL("../app/globals.css", import.meta.url), "utf8");
 
 const question = {
   title: "内部 IR 标题",
@@ -323,7 +324,6 @@ describe("Result unified white panel", () => {
     expect(moduleCss.indexOf("grid-template-rows: minmax(0, 1fr)")).toBeGreaterThan(
       moduleCss.indexOf("@media (min-width: 1024px){")
     );
-    expect(moduleCss.indexOf("position: sticky")).toBe(-1);
 
     // The stacked layout must pin one column, so the mobile path cannot inherit the desktop grid.
     const stacked = mediaBlock(moduleCss, "(max-width: 1023px)");
@@ -334,6 +334,45 @@ describe("Result unified white panel", () => {
     expect(stackedGrid?.[1]).toMatch(/grid-template-columns:\s*minmax\(0,\s*1fr\)/);
     // The desktop divider is a pseudo-element, so it cannot leak into the stacked layout.
     expect(stacked).not.toContain("::before");
+  });
+
+  test("the action row is pinned inside the scrolling column on desktop", () => {
+    // The publish column is the scroll owner and the footer lives inside it, so "always reachable"
+    // means position: sticky — margin-top alone lets the row scroll away on sub-900px-tall desktops
+    // (measured 58px below the fold at 1366x768 and 122px at 1024x768 before this rule existed).
+    // The background has to be opaque, or scrolled content shows through behind the buttons.
+    const footerRule = mediaBlock(moduleCss, "(min-width: 1024px)").match(
+      /:global\(\.scene-canvas\[data-stage="result"\]\)\s+\.publishColumn\s*>\s*:global\(\.result-footer\)\{([^}]*)\}/
+    );
+
+    expect(footerRule, "no desktop result-footer rule").not.toBeNull();
+    expect(footerRule?.[1]).toMatch(/position:\s*sticky/);
+    expect(footerRule?.[1]).toMatch(/bottom:\s*0/);
+    expect(footerRule?.[1]).toMatch(/background:\s*#fff/);
+    // Sticky is what pins the row, so it must not leak onto any other result element.
+    expect(moduleCss.split("position: sticky").length - 1).toBe(1);
+  });
+
+  test("the original column is a peer of the publishable column, not a dimmed ghost", () => {
+    // `globals.css` plays `result-before-dim` (fill-mode both) on `[data-motion="before"]`, which
+    // would freeze this column at opacity 0.38 / scale(0.94) inside the shared white panel: the
+    // 6% shrink alone pulls the divider off the column join and the copy becomes unreadable.
+    const ghostRule = moduleCss.match(/\.originalColumn\[data-motion="before"\]\{([^}]*)\}/);
+
+    expect(ghostRule, "the original column must opt out of the dim animation").not.toBeNull();
+    expect(ghostRule?.[1]).toMatch(/animation:\s*none/);
+    // The hook itself must survive (other tests assert its presence).
+    expect(resultSource).toContain('data-motion="before"');
+  });
+
+  test("the retired compiled-panel wrapper left no dead rules in globals.css", () => {
+    // compiled-question-panel.tsx no longer renders a `.workspace-panel.compiled-panel` wrapper, so
+    // every `.compiled-panel …` descendant rule in globals.css can never match. The bare
+    // `.compiled-panel-body` element still exists and keeps its one live rule.
+    expect(globalsCss).not.toMatch(/\.compiled-panel\s*[,{]/);
+    expect(globalsCss).not.toMatch(/\.result-stage \.workspace-panel/);
+    expect(globalsCss).not.toMatch(/\.result-stage \.panel-heading/);
+    expect(globalsCss).toContain(".compiled-panel-body{");
   });
 
   test("geometry is scoped by stage, never by transition role", () => {

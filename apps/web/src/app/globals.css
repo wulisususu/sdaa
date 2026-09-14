@@ -248,42 +248,9 @@ a{
   align-content: start;
 }
 
-/* The compiled panel: the publishable result is the dominant surface. Its own body grows to
-   fit its content (the normal payload is short), and only genuinely long bodies scroll. */
-.compiled-panel{
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-}
-
-.compiled-panel > .panel-heading{
-  flex: 0 0 auto;
-}
-
-.compiled-panel > .panel-content{
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  flex: 1 1 auto;
-}
-
-.compiled-panel > .panel-content > .compiled-panel-body{
-  flex: 0 1 auto;
-  min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  align-content: start;
-}
-
-.compiled-panel > .panel-content > .compiled-actions{
-  flex: 0 0 auto;
-  margin-top: auto;
-}
-
-.compiled-panel > .panel-content > .publish-hint{
-  flex: 0 0 auto;
-}
-
+/* The unified Result panel owns the compiled body's layout: those rules live in
+   `result-stage.module.css`, because the old `.compiled-panel > …` wrappers are no longer rendered
+   by compiled-question-panel.tsx. The bare `.compiled-panel-body` element itself still exists. */
 .compiled-panel-body{
   display: grid;
   gap: 12px;
@@ -313,14 +280,6 @@ a{
 .result-stage .before-card blockquote{
   font-size: 12.5px;
   margin: 3px 0;
-}
-
-.result-stage .workspace-panel{
-  padding: 10px 12px;
-}
-
-.result-stage .panel-heading{
-  margin-bottom: 4px;
 }
 
 .result-stage .compiled-card{
@@ -424,10 +383,6 @@ a{
 
   .result-stage .before-card{
     padding: 7px 9px;
-  }
-
-  .result-stage .workspace-panel{
-    padding: 8px 9px;
   }
 
   .result-stage .before-after-grid{
@@ -1713,16 +1668,6 @@ textarea:focus{
   font-weight: 720;
   line-height: 1.45;
   letter-spacing: -0.025em;
-}
-
-.workspace-panel{
-  min-width: 0;
-  overflow: hidden;
-}
-
-.compiled-panel{
-  border-color: #d5d2fa;
-  box-shadow: 0 13px 34px rgba(79, 70, 229, 0.08);
 }
 
 .compiled-heading{
