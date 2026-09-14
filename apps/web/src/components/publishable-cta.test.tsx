@@ -65,7 +65,6 @@ describe("publishable CTA", () => {
         copyStatus="idle"
         onCopy={() => undefined}
         onReoptimize={() => undefined}
-        onNewQuestion={() => undefined}
         onOpenZhihu={() => undefined}
       />
     );
@@ -73,6 +72,9 @@ describe("publishable CTA", () => {
     expect(html).toContain('data-motion="before"');
     expect(html).toContain('data-motion="after"');
     expect(html).toContain('data-motion="result-actions"');
+    // The Result footer was removed: 新建问题 lives in the persistent header only.
+    expect(html).not.toContain("result-footer-actions");
+    expect(html).not.toContain("新建一个问题");
   });
 
   test("compiler demo no longer opens the 404 ask route", () => {

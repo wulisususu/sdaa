@@ -47,30 +47,32 @@ export function DiagnosisStage({
         <div className="flow-card diagnosis-findings-card">
           <div className="flow-heading flow-heading-split">
             <div>
-              <span className="section-kicker">Question Diagnostics</span>
-              <h2>发现 {diagnostics.length} 个值得优化的地方</h2>
+              <span className="section-kicker">03 / 05 · DIAGNOSE</span>
+              <h2 data-motion="headline">发现 {diagnostics.length} 个值得优化的地方</h2>
               <small>不是语法错误，而是可能影响回答质量的信息问题</small>
             </div>
-            <span className="answer-progress">{diagnostics.length} 项发现</span>
+            <span className="diagnostic-count-meta">{diagnostics.length} 项发现</span>
           </div>
-          <div className="diagnostic-list diagnosis-list-large">
-            {diagnostics.map((item, index) => (
-              <article
-                className={`diagnostic-card diagnostic-${item.level}`}
-                data-motion-item="diagnostic"
-                key={item.code}
-                style={{ "--motion-delay": `${index * 70}ms` } as CSSProperties}
-              >
-                <div className="diagnostic-meta">
-                  <span className="diagnostic-code">{item.code}</span>
-                  <span className="diagnostic-severity">{severityLabel(item.level)}</span>
-                </div>
-                <div className="diagnostic-copy">
-                  <h3>{item.title}</h3>
-                  <p>{item.summary}</p>
-                </div>
-              </article>
-            ))}
+          <div className="diagnostic-list-viewport">
+            <div className="diagnostic-list diagnosis-list-large">
+              {diagnostics.map((item, index) => (
+                <article
+                  className={`diagnostic-card diagnostic-${item.level}`}
+                  data-motion-item="diagnostic"
+                  key={item.code}
+                  style={{ "--motion-delay": `${index * 70}ms` } as CSSProperties}
+                >
+                  <div className="diagnostic-meta">
+                    <span className="diagnostic-code">{item.code}</span>
+                    <span className="diagnostic-severity">{severityLabel(item.level)}</span>
+                  </div>
+                  <div className="diagnostic-copy">
+                    <h3>{item.title}</h3>
+                    <p>{item.summary}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
           </div>
         </div>
       </div>

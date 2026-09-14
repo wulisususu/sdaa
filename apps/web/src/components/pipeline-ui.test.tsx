@@ -1,13 +1,36 @@
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, test } from "vitest";
-import { ClarificationStage } from "./clarification-stage";
+import { ClarificationStage, findFirstUnansweredIndex } from "./clarification-stage";
 import { CompiledQuestionPanel } from "./compiled-question-panel";
 import { CompilerDemo } from "./compiler-demo";
 import { CoverageStage } from "./coverage-stage";
 import { DiagnosisStage } from "./diagnosis-stage";
+import {
+  EvidenceDrawerContent,
+  getInitialFocusIndex,
+  getTrappedFocusIndex
+} from "./evidence-drawer";
 import { InputStage } from "./input-stage";
-import { StageStepper } from "./stage-stepper";
+import { KnowledgeCoverage } from "./knowledge-coverage";
+
+function makeEvidence(count: number) {
+  return Array.from({ length: count }, (_, index) => ({
+    id: String(index + 1),
+    title: `证据 ${index + 1}`,
+    contentType: "Question",
+    summary: `摘要 ${index + 1}`,
+    url: `https://www.zhihu.com/question/${index + 1}`,
+    author: "答主",
+    editedAt: 1710000000 + index,
+    rankingScore: 0.9,
+    authorityLevel: "2",
+    voteUpCount: 10 + index,
+    commentCount: index,
+    selectedComments: [],
+    source: "zhihu" as const
+  }));
+}
 
 const evidence = [{
   id: "123",
@@ -29,7 +52,7 @@ describe("real pipeline UI", () => {
   test("initial compiler no longer presents mock data", () => {
     const html = renderToStaticMarkup(<CompilerDemo />);
     expect(html).toContain('data-stage="input"');
-    expect(html).toContain("知乎 AI 提问编译器");
+    expect(html).toContain("01 / 05 · INPUT");
     expect(html).not.toContain("Mock Data");
     expect(html).not.toContain(">现在转码还有前途吗？</textarea>");
   });
@@ -56,26 +79,69 @@ describe("real pipeline UI", () => {
     expect(html).toContain("正在理解你的问题…");
   });
 
-  test("input stage explains the evidence and publishing boundary", () => {
+  test("primary compiler removes redundant trust and progress chrome", () => {
+    const html = renderToStaticMarkup(<CompilerDemo />);
+
+    expect(html).not.toContain("真实链路 · AI + 知乎检索");
+    expect(html).not.toContain("真实 AI + 知乎检索");
+    expect(html).not.toContain("只整理与复制问题，不会自动发布");
+    expect(html).not.toContain('class="page-intro"');
+    expect(html).not.toContain('class="demo-badge"');
+    expect(html).not.toContain("stage-stepper");
+    expect(html).not.toContain("mobile-stage-progress");
+  });
+
+  test("input keeps analyze loading feedback without trust footer", () => {
     const html = renderToStaticMarkup(
-      <InputStage rawQuestion="AI 应用开发应该怎么学？" ready onChange={() => undefined} onContinue={() => undefined} />
+      <InputStage
+        rawQuestion="AI 应用开发应该怎么学？"
+        ready
+        loading
+        onChange={() => undefined}
+        onContinue={() => undefined}
+      />
     );
-    expect(html).toContain("真实 AI + 知乎检索");
-    expect(html).toContain("不会自动发布");
+
+    expect(html).toContain("正在理解你的问题…");
+    expect(html).not.toContain("真实 AI + 知乎检索");
+    expect(html).not.toContain("不会自动发布");
   });
 
-  test("stepper marks earlier visited stages as completed", () => {
-    const html = renderToStaticMarkup(<StageStepper stage="diagnose" maxVisited="diagnose" />);
-    expect(html).toContain("is-completed");
-    expect(html).toContain("✓");
-    expect(html).toContain('aria-current="step"');
+  test("compiler routes its active stage through the transition viewport", () => {
+    const html = renderToStaticMarkup(<CompilerDemo />);
+    expect(html).toContain("scene-transition-viewport");
+    expect(html).toContain('data-stage="input"');
+    expect(html).not.toContain("stage-scene-shell");
   });
 
-  test("stepper exposes compact mobile progress instead of relying on compressed desktop labels", () => {
-    const html = renderToStaticMarkup(<StageStepper stage="diagnose" maxVisited="diagnose" />);
-    expect(html).toContain("mobile-stage-progress");
-    expect(html).toContain("3 / 5");
-    expect(html).toContain("问题体检");
+  test("clarify focuses the first unanswered question", () => {
+    const questions = [
+      { id: "q1", question: "A?", options: ["1"] },
+      { id: "q2", question: "B?", options: ["2"] },
+      { id: "q3", question: "C?", options: ["3"] }
+    ];
+
+    expect(findFirstUnansweredIndex(questions, { q1: "1" })).toBe(1);
+  });
+
+  test("clarify renders one question instead of a four-card wall", () => {
+    const html = renderToStaticMarkup(
+      <ClarificationStage
+        questions={[
+          { id: "q1", question: "第一题？", options: ["A"] },
+          { id: "q2", question: "第二题？", options: ["B"] }
+        ]}
+        answers={{}}
+        answeredCount={0}
+        onAnswer={() => undefined}
+        onBack={() => undefined}
+        onContinue={() => undefined}
+      />
+    );
+
+    expect(html).toContain("第一题？");
+    expect(html).not.toContain("clarification-grid");
+    expect(html).toContain("1 / 2");
   });
 
   test("input and clarification controls expose micro-interaction hooks", () => {
@@ -93,13 +159,6 @@ describe("real pipeline UI", () => {
     expect(input).toContain('data-motion="input"');
     expect(input).toContain('data-motion="primary-action"');
     expect(clarification).toContain('data-motion="option"');
-  });
-
-  test("stepper exposes scene tone and stable motion hooks", () => {
-    const html = renderToStaticMarkup(<StageStepper stage="coverage" maxVisited="coverage" />);
-    expect(html).toContain('data-tone="light"');
-    expect(html).toContain('data-motion="stage-number"');
-    expect(html).toContain('data-motion="headline"');
   });
 
   test("clarification selection has a non-color check indicator", () => {
@@ -153,6 +212,69 @@ describe("real pipeline UI", () => {
     );
     expect(html).toContain("本次未加入知乎已有讨论证据，仍可继续整理问题");
     expect(html).not.toContain("知乎检索结果</span>");
+  });
+
+  test("coverage keeps only four evidence items in the main scene", () => {
+    const html = renderToStaticMarkup(
+      <KnowledgeCoverage items={[]} evidence={makeEvidence(6)} />
+    );
+
+    expect(html).toContain("查看全部 6 条参考来源");
+    expect((html.match(/data-evidence-preview=/g) ?? []).length).toBe(4);
+    expect(html).not.toContain("收起参考来源");
+  });
+
+  test("evidence drawer exposes bounded dialog semantics", () => {
+    const html = renderToStaticMarkup(
+      <EvidenceDrawerContent items={makeEvidence(2)} onClose={() => undefined} />
+    );
+
+    expect(html).toContain('role="dialog"');
+    expect(html).toContain('aria-modal="true"');
+    expect(html).toContain('aria-label="全部参考来源"');
+    expect(html).toContain("全部参考来源");
+    expect(html).toContain("证据 1");
+  });
+
+  test("evidence drawer keeps the full list in an internally scrolling region", () => {
+    const html = renderToStaticMarkup(
+      <EvidenceDrawerContent items={makeEvidence(6)} onClose={() => undefined} />
+    );
+
+    expect(html).toContain("evidence-drawer-scroll");
+    expect((html.match(/class="evidence-source-item"/g) ?? []).length).toBe(6);
+  });
+
+  test("evidence drawer traps Tab and Shift+Tab inside the dialog", () => {
+    // 3 focusables: indices 0..2
+    expect(getTrappedFocusIndex(3, 0, false)).toBe(1);
+    expect(getTrappedFocusIndex(3, 1, false)).toBe(2);
+    expect(getTrappedFocusIndex(3, 2, false)).toBe(0); // wraps forward
+    expect(getTrappedFocusIndex(3, 0, true)).toBe(2);  // wraps backward
+    expect(getTrappedFocusIndex(3, 1, true)).toBe(0);
+    // Focus outside the dialog is pulled back to an edge instead of escaping.
+    expect(getTrappedFocusIndex(3, -1, false)).toBe(0);
+    expect(getTrappedFocusIndex(3, -1, true)).toBe(2);
+    // Nothing focusable: caller prevents the default rather than moving focus.
+    expect(getTrappedFocusIndex(0, -1, false)).toBe(-1);
+  });
+
+  test("evidence drawer takes initial focus inside the dialog", () => {
+    expect(getInitialFocusIndex(7)).toBe(0);
+    expect(getInitialFocusIndex(0)).toBe(-1);
+  });
+
+  test("input exposes one explicit primary headline motion hook", () => {
+    const html = renderToStaticMarkup(
+      <InputStage
+        rawQuestion="AI 应用开发应该怎么学？"
+        ready
+        onChange={() => undefined}
+        onContinue={() => undefined}
+      />
+    );
+
+    expect(html).toContain('<h2 data-motion="headline">你真正想问什么？</h2>');
   });
 
   test("result panel prioritizes the publishable question and keeps IR collapsible", () => {

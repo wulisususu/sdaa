@@ -1,11 +1,9 @@
 "use client";
 
 import {
-  canVisitStage,
   countAnsweredClarifications,
   formatPublishableQuestion,
   getPreviousStage,
-  getStageIndex,
   isRawQuestionReady,
   setClarificationAnswer,
   type ClarificationAnswers,
@@ -26,19 +24,10 @@ import { CoverageStage } from "./coverage-stage";
 import { DiagnosisStage } from "./diagnosis-stage";
 import { InputStage } from "./input-stage";
 import { ResultStage } from "./result-stage";
-import { StageStepper } from "./stage-stepper";
-import { StageSceneShell } from "./stage-scene-shell";
+import { StageTransitionViewport } from "./stage-transition-viewport";
 
 type CopyStatus = "idle" | "copied" | "error";
 type Operation = "idle" | "analyzing" | "retrieving" | "compiling";
-
-export function capVisitedStageAfterAnswer(
-  current: QuestionCompilerStage
-): QuestionCompilerStage {
-  return getStageIndex(current) > getStageIndex("diagnose")
-    ? "diagnose"
-    : current;
-}
 
 function safeErrorMessage(error: unknown): string {
   return error instanceof Error && error.message.trim().length > 0
@@ -48,8 +37,6 @@ function safeErrorMessage(error: unknown): string {
 
 export function CompilerDemo() {
   const [stage, setStage] = useState<QuestionCompilerStage>("input");
-  const [previousStage, setPreviousStage] = useState<QuestionCompilerStage | null>(null);
-  const [maxVisited, setMaxVisited] = useState<QuestionCompilerStage>("input");
   const [rawQuestion, setRawQuestion] = useState("");
   const [answers, setAnswers] = useState<ClarificationAnswers>({});
   const [analysis, setAnalysis] = useState<QuestionAnalysis | null>(null);
@@ -58,6 +45,7 @@ export function CompilerDemo() {
   const [operation, setOperation] = useState<Operation>("idle");
   const [error, setError] = useState<string | null>(null);
   const [copyStatus, setCopyStatus] = useState<CopyStatus>("idle");
+  const [sceneResetEpoch, setSceneResetEpoch] = useState(0);
   const requestVersion = useRef(0);
 
   const ready = isRawQuestionReady(rawQuestion);
@@ -69,26 +57,12 @@ export function CompilerDemo() {
 
   function transitionTo(next: QuestionCompilerStage) {
     if (next === stage) return;
-    setPreviousStage(stage);
     setStage(next);
-  }
-
-  function markVisited(next: QuestionCompilerStage) {
-    transitionTo(next);
-    setMaxVisited((current) =>
-      getStageIndex(next) > getStageIndex(current) ? next : current
-    );
   }
 
   function cancelPending() {
     requestVersion.current += 1;
     setOperation("idle");
-  }
-
-  function visit(next: QuestionCompilerStage) {
-    if (!canVisitStage(next, maxVisited)) return;
-    if (next !== stage && operation !== "idle") cancelPending();
-    transitionTo(next);
   }
 
   function back() {
@@ -107,7 +81,6 @@ export function CompilerDemo() {
     setCopyStatus("idle");
     setError(null);
     transitionTo("input");
-    setMaxVisited("input");
   }
 
   async function handleAnalyze() {
@@ -123,7 +96,7 @@ export function CompilerDemo() {
       setRetrieval(null);
       setCompiled(null);
       setCopyStatus("idle");
-      markVisited("clarify");
+      transitionTo("clarify");
     } catch (nextError) {
       if (version === requestVersion.current) setError(safeErrorMessage(nextError));
     } finally {
@@ -137,13 +110,12 @@ export function CompilerDemo() {
     setCompiled(null);
     setCopyStatus("idle");
     setError(null);
-    setMaxVisited((current) => capVisitedStageAfterAnswer(current));
   }
 
   function handleClarifyContinue() {
     if (!analysis) return;
     setError(null);
-    markVisited("diagnose");
+    transitionTo("diagnose");
   }
 
   async function handleRetrieve() {
@@ -161,7 +133,7 @@ export function CompilerDemo() {
       setRetrieval(nextRetrieval);
       setCompiled(null);
       setCopyStatus("idle");
-      markVisited("coverage");
+      transitionTo("coverage");
     } catch (nextError) {
       if (version === requestVersion.current) setError(safeErrorMessage(nextError));
     } finally {
@@ -184,7 +156,7 @@ export function CompilerDemo() {
       if (version !== requestVersion.current) return;
       setCompiled(nextCompiled);
       setCopyStatus("idle");
-      markVisited("result");
+      transitionTo("result");
     } catch (nextError) {
       if (version === requestVersion.current) setError(safeErrorMessage(nextError));
     } finally {
@@ -212,7 +184,7 @@ export function CompilerDemo() {
     setError(null);
     setCopyStatus("idle");
     transitionTo("input");
-    setMaxVisited("input");
+    setSceneResetEpoch((value) => value + 1);
   }
 
   function handleReoptimize() {
@@ -222,60 +194,92 @@ export function CompilerDemo() {
     setError(null);
     setCopyStatus("idle");
     transitionTo("clarify");
-    setMaxVisited("diagnose");
   }
 
   function handleOpenZhihu() {
     window.open("https://www.zhihu.com/", "_blank", "noopener,noreferrer");
   }
 
+  function renderStage(stageToRender: QuestionCompilerStage) {
+    switch (stageToRender) {
+      case "input":
+        return (
+          <InputStage
+            rawQuestion={rawQuestion}
+            ready={ready}
+            loading={operation === "analyzing"}
+            error={error}
+            onChange={handleRawQuestionChange}
+            onContinue={handleAnalyze}
+          />
+        );
+
+      case "clarify":
+        return analysis ? (
+          <ClarificationStage
+            questions={analysis.clarificationQuestions}
+            answers={answers}
+            answeredCount={answeredCount}
+            onAnswer={handleAnswer}
+            onBack={back}
+            onContinue={handleClarifyContinue}
+          />
+        ) : null;
+
+      case "diagnose":
+        return analysis ? (
+          <DiagnosisStage
+            rawQuestion={rawQuestion}
+            intent={analysis.intent}
+            diagnostics={analysis.diagnostics}
+            loading={operation === "retrieving"}
+            error={error}
+            onBack={back}
+            onContinue={handleRetrieve}
+          />
+        ) : null;
+
+      case "coverage":
+        return retrieval ? (
+          <CoverageStage
+            coverage={retrieval.existingCoverage}
+            gaps={retrieval.knowledgeGaps}
+            evidence={retrieval.evidence}
+            status={retrieval.status}
+            loading={operation === "compiling"}
+            error={error}
+            onBack={back}
+            onContinue={handleCompile}
+          />
+        ) : null;
+
+      case "result":
+        return compiled ? (
+          <ResultStage
+            rawQuestion={rawQuestion}
+            question={compiled.compiledQuestion}
+            publishableQuestion={compiled.publishableQuestion}
+            evidenceUsed={compiled.evidenceUsed}
+            warnings={compiled.warnings}
+            copyStatus={copyStatus}
+            onCopy={handleCopy}
+            onReoptimize={handleReoptimize}
+            onOpenZhihu={handleOpenZhihu}
+          />
+        ) : null;
+    }
+  }
+
   return (
     <main className="app-shell">
       <AppHeader onNewQuestion={handleNewQuestion} />
       <div className="page-container">
-        <section className="page-intro">
-          <div>
-            <span className="eyebrow">知乎 AI 提问编译器</span>
-            <h1>把模糊需求，整理成值得回答的问题</h1>
-            <p>先把问题问清楚，再进入答案世界。</p>
-          </div>
-          <span className="demo-badge">真实链路 · AI + 知乎检索</span>
-        </section>
-
-        <StageSceneShell stage={stage} previousStage={previousStage}>
-          <StageStepper stage={stage} maxVisited={maxVisited} onChange={visit} />
-
-          {stage === "input" && (
-          <InputStage rawQuestion={rawQuestion} ready={ready} loading={operation === "analyzing"} error={error} onChange={handleRawQuestionChange} onContinue={handleAnalyze} />
-        )}
-
-        {stage === "clarify" && analysis && (
-          <ClarificationStage questions={analysis.clarificationQuestions} answers={answers} answeredCount={answeredCount} onAnswer={handleAnswer} onBack={back} onContinue={handleClarifyContinue} />
-        )}
-
-        {stage === "diagnose" && analysis && (
-          <DiagnosisStage rawQuestion={rawQuestion} intent={analysis.intent} diagnostics={analysis.diagnostics} loading={operation === "retrieving"} error={error} onBack={back} onContinue={handleRetrieve} />
-        )}
-
-        {stage === "coverage" && retrieval && (
-          <CoverageStage coverage={retrieval.existingCoverage} gaps={retrieval.knowledgeGaps} evidence={retrieval.evidence} status={retrieval.status} loading={operation === "compiling"} error={error} onBack={back} onContinue={handleCompile} />
-        )}
-
-          {stage === "result" && compiled && (
-            <ResultStage
-              rawQuestion={rawQuestion}
-              question={compiled.compiledQuestion}
-              publishableQuestion={compiled.publishableQuestion}
-              evidenceUsed={compiled.evidenceUsed}
-              warnings={compiled.warnings}
-              copyStatus={copyStatus}
-              onCopy={handleCopy}
-              onReoptimize={handleReoptimize}
-              onNewQuestion={handleNewQuestion}
-              onOpenZhihu={handleOpenZhihu}
-            />
-          )}
-        </StageSceneShell>
+        <StageTransitionViewport
+          key={sceneResetEpoch}
+          targetStage={stage}
+          scene={renderStage(stage)}
+          resetEpoch={sceneResetEpoch}
+        />
       </div>
     </main>
   );

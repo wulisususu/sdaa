@@ -38,35 +38,40 @@ export function CompiledQuestionPanel({
       </div>
 
       <div className="panel-content">
-        <article className="compiled-card publishable-card">
-          <span className="compiled-label">最终标题</span>
-          <h3>{publishableQuestion.title}</h3>
-          <p className="publishable-context">{publishableQuestion.context}</p>
-          <div className="expected-answer-block publishable-questions-block">
-            <span className="compiled-label">想请教</span>
-            <ol className="publishable-question-list">
-              {publishableQuestion.questions.map((item) => <li key={item}>{item}</li>)}
-            </ol>
+        <div className="compiled-panel-body">
+          {/* Only the long publishable body may scroll internally; the primary CTA stays outside. */}
+          <div className="compiled-publishable-scroll">
+            <article className="compiled-card publishable-card">
+              <span className="compiled-label">最终标题</span>
+              <h3>{publishableQuestion.title}</h3>
+              <p className="publishable-context">{publishableQuestion.context}</p>
+              <div className="expected-answer-block publishable-questions-block">
+                <span className="compiled-label">想请教</span>
+                <ol className="publishable-question-list">
+                  {publishableQuestion.questions.map((item) => <li key={item}>{item}</li>)}
+                </ol>
+              </div>
+            </article>
           </div>
-        </article>
 
-        <details className="compiler-details">
-          <summary>查看编译细节 <span>Question IR</span></summary>
-          <div className="compiler-details-body">
-            <dl className="compiled-details">
-              <div><dt>背景</dt><dd>{question.background}</dd></div>
-              <div><dt>目标</dt><dd>{question.goal}</dd></div>
-              <div><dt>限制</dt><dd>{question.constraints.length > 0 ? question.constraints.join("；") : "未额外限定"}</dd></div>
-              <div><dt>核心困惑</dt><dd>{question.coreUncertainty}</dd></div>
-            </dl>
-            <div className="expected-answer-block">
-              <span className="compiled-label">希望回答者重点讨论</span>
-              <div className="expectation-row">
-                {question.expectedAnswer.map((item) => <span key={item}>{item}</span>)}
+          <details className="compiler-details">
+            <summary>查看编译细节 <span>Question IR</span></summary>
+            <div className="compiler-details-body">
+              <dl className="compiled-details">
+                <div><dt>背景</dt><dd>{question.background}</dd></div>
+                <div><dt>目标</dt><dd>{question.goal}</dd></div>
+                <div><dt>限制</dt><dd>{question.constraints.length > 0 ? question.constraints.join("；") : "未额外限定"}</dd></div>
+                <div><dt>核心困惑</dt><dd>{question.coreUncertainty}</dd></div>
+              </dl>
+              <div className="expected-answer-block">
+                <span className="compiled-label">希望回答者重点讨论</span>
+                <div className="expectation-row">
+                  {question.expectedAnswer.map((item) => <span key={item}>{item}</span>)}
+                </div>
               </div>
             </div>
-          </div>
-        </details>
+          </details>
+        </div>
 
         <div className="action-row compiled-actions mobile-sticky-actions" data-motion="result-actions">
           <button

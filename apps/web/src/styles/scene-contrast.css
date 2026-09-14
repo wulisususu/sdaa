@@ -1,6 +1,6 @@
 /* Scene foreground colors belong to the full-screen backdrop. Light content surfaces
    must establish their own readable foreground instead of inheriting white text. */
-.stage-scene-shell :is(
+.scene-canvas :is(
   .flow-card,
   .workspace-panel,
   .knowledge-card,

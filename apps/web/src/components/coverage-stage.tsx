@@ -39,8 +39,8 @@ export function CoverageStage({
     <section className="flow-stage flow-stage-wide">
       <div className="flow-heading stage-section-heading">
         <div>
-          <span className="section-kicker">知乎知识覆盖</span>
-          <h2>先看已经讨论过什么，再决定还值不值得问</h2>
+          <span className="section-kicker">04 / 05 · COVERAGE</span>
+          <h2 data-motion="headline">先看已经讨论过什么，再决定还值不值得问</h2>
           <small>Knowledge Coverage</small>
         </div>
       </div>
