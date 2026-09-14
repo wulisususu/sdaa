@@ -43,12 +43,13 @@ describe("stage visuals", () => {
   });
 
   test("light surface cards reset scene foreground to readable dark text", () => {
-    const css = readFileSync("src/app/globals.css", "utf8");
-    const surfaceRule = css.match(
-      /\.flow-card,\s*\.workspace-panel,\s*\.knowledge-card,\s*\.before-card\s*\{([^}]*)\}/s
-    );
+    const css = readFileSync("src/styles/scene-contrast.css", "utf8");
 
-    expect(surfaceRule).not.toBeNull();
-    expect(surfaceRule?.[1]).toContain("color: var(--text-primary);");
+    expect(css).toContain(".flow-card");
+    expect(css).toContain(".workspace-panel");
+    expect(css).toContain(".knowledge-card");
+    expect(css).toContain(".before-card");
+    expect(css).toContain(".result-status");
+    expect(css).toContain("color: var(--text-primary);");
   });
 });
