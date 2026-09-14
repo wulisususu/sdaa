@@ -1,6 +1,7 @@
 import React, { isValidElement, type ReactElement, type ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, test } from "vitest";
+import type { QuestionSessionSummaryV2 } from "../lib/question-session-storage";
 import { ResumeSessionCard } from "./resume-session-card";
 
 function collectButtons(node: ReactNode): ReactElement<{ onClick?: () => void }>[] {
@@ -11,22 +12,44 @@ function collectButtons(node: ReactNode): ReactElement<{ onClick?: () => void }>
   return [...self, ...collectButtons(children)];
 }
 
-const rawQuestion = "现在转码还有前途吗？";
+const summary: QuestionSessionSummaryV2 = {
+  conversationId: "conv-resume",
+  rawQuestion: "现在转码还有前途吗？",
+  stage: "clarify",
+  createdAt: 1_700_000_000_000,
+  updatedAt: 1_700_000_300_000
+};
 
 describe("resume session card", () => {
-  test("renders the previous raw question and both recovery actions", () => {
+  test("renders the summary question and both recovery actions", () => {
     const html = renderToStaticMarkup(
-      <ResumeSessionCard rawQuestion={rawQuestion} onResume={() => undefined} onDiscard={() => undefined} />
+      <ResumeSessionCard session={summary} onResume={() => undefined} onDismiss={() => undefined} />
     );
 
-    expect(html).toContain(rawQuestion);
+    expect(html).toContain(summary.rawQuestion);
     expect(html).toContain("继续上次");
     expect(html).toContain("新问题");
   });
 
+  test("does not require analysis, retrieval or compiled payloads", () => {
+    // A summary is enough: an in-progress session may have no downstream payload at all.
+    const minimal: QuestionSessionSummaryV2 = {
+      conversationId: "conv-minimal",
+      rawQuestion: "买",
+      stage: "input",
+      createdAt: 1,
+      updatedAt: 2
+    };
+    const html = renderToStaticMarkup(
+      <ResumeSessionCard session={minimal} onResume={() => undefined} onDismiss={() => undefined} />
+    );
+
+    expect(html).toContain("买");
+  });
+
   test("uses the thin-line history and plus icons", () => {
     const html = renderToStaticMarkup(
-      <ResumeSessionCard rawQuestion={rawQuestion} onResume={() => undefined} onDiscard={() => undefined} />
+      <ResumeSessionCard session={summary} onResume={() => undefined} onDismiss={() => undefined} />
     );
 
     expect(html).toContain('data-icon="history"');
@@ -38,7 +61,7 @@ describe("resume session card", () => {
 
   test("renders no explanatory helper copy", () => {
     const html = renderToStaticMarkup(
-      <ResumeSessionCard rawQuestion={rawQuestion} onResume={() => undefined} onDiscard={() => undefined} />
+      <ResumeSessionCard session={summary} onResume={() => undefined} onDismiss={() => undefined} />
     );
 
     expect(html).not.toContain("<small");
@@ -48,16 +71,16 @@ describe("resume session card", () => {
     expect(html).not.toContain("新标签页");
   });
 
-  test("继续上次 invokes onResume and 新问题 invokes onDiscard", () => {
+  test("继续上次 invokes onResume and 新问题 invokes onDismiss", () => {
     let resumed = 0;
-    let discarded = 0;
+    let dismissed = 0;
     const tree = ResumeSessionCard({
-      rawQuestion,
+      session: summary,
       onResume: () => {
         resumed += 1;
       },
-      onDiscard: () => {
-        discarded += 1;
+      onDismiss: () => {
+        dismissed += 1;
       }
     });
 
@@ -66,10 +89,10 @@ describe("resume session card", () => {
 
     buttons[0].props.onClick?.();
     expect(resumed).toBe(1);
-    expect(discarded).toBe(0);
+    expect(dismissed).toBe(0);
 
     buttons[1].props.onClick?.();
     expect(resumed).toBe(1);
-    expect(discarded).toBe(1);
+    expect(dismissed).toBe(1);
   });
 });

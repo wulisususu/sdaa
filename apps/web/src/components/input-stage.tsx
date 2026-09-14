@@ -38,6 +38,7 @@ export function InputStage({
           onChange={(event) => onChange(event.target.value)}
           placeholder="例如：现在转码还有前途吗？"
           rows={7}
+          maxLength={1000}
           autoFocus
         />
         <div className="input-meta">

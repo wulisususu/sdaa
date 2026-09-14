@@ -2290,3 +2290,104 @@ textarea:focus{
     transform: none;
   }
 }
+
+/* ---- Recent question history overlay -------------------------------------------------
+   Appended outside the scene-transition-viewport geometry so the one-viewport five-scene
+   composition is untouched. */
+.app-header-actions{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.app-header-actions .ghost-button{
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.history-overlay{
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  justify-content: flex-end;
+  background: rgba(23, 26, 36, 0.28);
+  backdrop-filter: blur(4px);
+}
+
+.history-drawer{
+  width: min(420px, 92vw);
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-raised);
+  border-left: 1px solid var(--border);
+  box-shadow: -18px 0 48px rgba(28, 35, 55, 0.12);
+}
+
+.history-drawer-header{
+  min-height: var(--app-header-height);
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+}
+
+.history-drawer-header h2{
+  margin: 0;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+}
+
+.history-list{
+  padding: 12px;
+  overflow-y: auto;
+}
+
+.history-empty{
+  margin: 8px 6px;
+  color: var(--text-tertiary);
+  font-size: 12px;
+}
+
+.history-row{
+  width: 100%;
+  padding: 13px 14px;
+  display: grid;
+  gap: 5px;
+  text-align: left;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
+}
+
+.history-row:hover,
+.history-row[data-active="true"]{
+  background: var(--surface-accent);
+  border-color: var(--border);
+}
+
+.history-row strong{
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.history-row span{
+  color: var(--text-tertiary);
+  font-size: 11px;
+}
+
+@media (max-width: 640px){
+  .app-header-actions .ghost-button{
+    padding-inline: 9px;
+  }
+
+  .history-drawer{
+    width: 100vw;
+  }
+}

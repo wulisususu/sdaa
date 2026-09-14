@@ -19,11 +19,19 @@ import {
   retrieveQuestionApi
 } from "../lib/api-client";
 import {
-  clearCompletedSession,
-  loadCompletedSession,
-  saveCompletedSession,
-  type StoredCompletedSessionV1
-} from "../lib/completed-session-storage";
+  createConversationId,
+  listRecentQuestionSessions,
+  loadActiveQuestionSession,
+  loadQuestionSession,
+  migrateLegacyCompletedSession,
+  resolveRestorableStage,
+  saveQuestionSession,
+  setActiveConversationId,
+  type QuestionSessionDraft,
+  type QuestionSessionSummaryV2,
+  type StoredQuestionSessionV2
+} from "../lib/question-session-storage";
+import { useQuestionSessionPersistence } from "../lib/use-question-session-persistence";
 import { AppHeader } from "./app-header";
 import { ClarificationStage } from "./clarification-stage";
 import { CoverageStage } from "./coverage-stage";
@@ -31,6 +39,7 @@ import { DiagnosisStage } from "./diagnosis-stage";
 import { InputStage } from "./input-stage";
 import { ResultStage } from "./result-stage";
 import { ResumeSessionCard } from "./resume-session-card";
+import { SessionHistoryDrawer } from "./session-history-drawer";
 import { StageTransitionViewport } from "./stage-transition-viewport";
 
 type CopyStatus = "idle" | "copied" | "error";
@@ -44,6 +53,8 @@ function safeErrorMessage(error: unknown): string {
 
 export function CompilerDemo() {
   const [stage, setStage] = useState<QuestionCompilerStage>("input");
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [conversationCreatedAt, setConversationCreatedAt] = useState<number | null>(null);
   const [rawQuestion, setRawQuestion] = useState("");
   const [answers, setAnswers] = useState<ClarificationAnswers>({});
   const [analysis, setAnalysis] = useState<QuestionAnalysis | null>(null);
@@ -52,13 +63,12 @@ export function CompilerDemo() {
   const [operation, setOperation] = useState<Operation>("idle");
   const [error, setError] = useState<string | null>(null);
   const [copyStatus, setCopyStatus] = useState<CopyStatus>("idle");
-  const [restorableSession, setRestorableSession] = useState<StoredCompletedSessionV1 | null>(null);
+  const [restorableSession, setRestorableSession] = useState<QuestionSessionSummaryV2 | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [recentSessions, setRecentSessions] = useState<QuestionSessionSummaryV2[]>([]);
   const [sceneResetEpoch, setSceneResetEpoch] = useState(0);
   const requestVersion = useRef(0);
-
-  useEffect(() => {
-    setRestorableSession(loadCompletedSession());
-  }, []);
+  const bootstrappedRef = useRef(false);
 
   const ready = isRawQuestionReady(rawQuestion);
   const clarificationQuestions = analysis?.clarificationQuestions ?? [];
@@ -77,6 +87,65 @@ export function CompilerDemo() {
     setOperation("idle");
   }
 
+  /**
+   * Hydration is not a pipeline step: it restores the exact saved stable state and remounts
+   * the visual viewport so the restored stage becomes the initial stable scene instead of
+   * animating Input -> restored stage. Transient values reset to idle so recovery can never
+   * resume a fake loading state.
+   */
+  function hydrateQuestionSession(session: StoredQuestionSessionV2) {
+    cancelPending();
+    setConversationId(session.conversationId);
+    setConversationCreatedAt(session.createdAt);
+    setRawQuestion(session.rawQuestion);
+    setAnswers(session.answers);
+    setAnalysis(session.analysis);
+    setRetrieval(session.retrieval);
+    setCompiled(session.compiled);
+    setOperation("idle");
+    setCopyStatus("idle");
+    setError(null);
+    setStage(resolveRestorableStage(session));
+    setSceneResetEpoch((value) => value + 1);
+  }
+
+  useEffect(() => {
+    if (bootstrappedRef.current) return;
+    bootstrappedRef.current = true;
+
+    migrateLegacyCompletedSession();
+    const active = loadActiveQuestionSession();
+    if (active) {
+      hydrateQuestionSession(active);
+      return;
+    }
+    // No active session to auto-hydrate: offer the newest recent session as a secondary path.
+    setRestorableSession(listRecentQuestionSessions()[0] ?? null);
+  }, []);
+
+  const sessionDraft = useMemo<QuestionSessionDraft | null>(() => {
+    if (!conversationId || conversationCreatedAt === null) return null;
+    return {
+      conversationId,
+      createdAt: conversationCreatedAt,
+      stage,
+      rawQuestion,
+      answers,
+      analysis,
+      retrieval,
+      compiled
+    };
+  }, [conversationId, conversationCreatedAt, stage, rawQuestion, answers, analysis, retrieval, compiled]);
+
+  const { flushQuestionSession } = useQuestionSessionPersistence(sessionDraft);
+
+  function ensureConversation(value: string) {
+    if (conversationId === null && value.trim().length > 0) {
+      setConversationId(createConversationId());
+      setConversationCreatedAt(Date.now());
+    }
+  }
+
   function back() {
     cancelPending();
     setError(null);
@@ -85,6 +154,7 @@ export function CompilerDemo() {
 
   function handleRawQuestionChange(value: string) {
     cancelPending();
+    ensureConversation(value);
     setRawQuestion(value);
     setAnswers({});
     setAnalysis(null);
@@ -166,9 +236,27 @@ export function CompilerDemo() {
         retrieval
       });
       if (version !== requestVersion.current) return;
+
+      // React state updates are async, so the just-produced Result is persisted from a locally
+      // built snapshot rather than from the stale pre-compile `sessionDraft`. This keeps the
+      // existing "persist before handoff" guarantee without waiting for the 250 ms debounce.
+      const resultConversationId = conversationId ?? createConversationId();
+      const resultCreatedAt = conversationCreatedAt ?? Date.now();
+      if (conversationId === null) setConversationId(resultConversationId);
+      if (conversationCreatedAt === null) setConversationCreatedAt(resultCreatedAt);
+      saveQuestionSession({
+        conversationId: resultConversationId,
+        createdAt: resultCreatedAt,
+        stage: "result",
+        rawQuestion,
+        answers,
+        analysis,
+        retrieval,
+        compiled: nextCompiled
+      });
+
       setCompiled(nextCompiled);
       setCopyStatus("idle");
-      saveCompletedSession({ rawQuestion, answers, analysis, retrieval, compiled: nextCompiled });
       setRestorableSession(null);
       transitionTo("result");
     } catch (nextError) {
@@ -190,7 +278,13 @@ export function CompilerDemo() {
 
   function handleNewQuestion() {
     cancelPending();
-    clearCompletedSession();
+    // Persist whatever the user had, then start clean. The previous question is deliberately
+    // retained in Recent History rather than deleted.
+    flushQuestionSession();
+    setActiveConversationId(null);
+    setConversationId(null);
+    setConversationCreatedAt(null);
+    // The blank Input stays usable and the History drawer still lists prior sessions.
     setRestorableSession(null);
     setRawQuestion("");
     setAnswers({});
@@ -204,21 +298,21 @@ export function CompilerDemo() {
   }
 
   function restoreLastSession() {
-    const session = restorableSession;
-    if (!session) return;
-    cancelPending();
-    setRawQuestion(session.rawQuestion);
-    setAnswers(session.answers);
-    setAnalysis(session.analysis);
-    setRetrieval(session.retrieval);
-    setCompiled(session.compiled);
-    setCopyStatus("idle");
-    setError(null);
+    const candidate = restorableSession;
+    if (!candidate) return;
+    const session = loadQuestionSession(candidate.conversationId);
+    if (!session) {
+      setRestorableSession(null);
+      return;
+    }
+    setActiveConversationId(session.conversationId);
     setRestorableSession(null);
-    transitionTo("result");
-    // Recovery is hydration, not a pipeline step. Remount the visual viewport so Result
-    // becomes the initial stable scene instead of animating Input -> Result.
-    setSceneResetEpoch((value) => value + 1);
+    hydrateQuestionSession(session);
+  }
+
+  /** Dismissal is UI-only: it must not delete the stored history entry. */
+  function dismissResumeCandidate() {
+    setRestorableSession(null);
   }
 
   function handleReoptimize() {
@@ -231,10 +325,25 @@ export function CompilerDemo() {
   }
 
   function handleOpenZhihu() {
-    if (analysis && retrieval && compiled) {
-      saveCompletedSession({ rawQuestion, answers, analysis, retrieval, compiled });
-    }
+    // Force a synchronous flush so the session is durable before the user leaves for Zhihu.
+    flushQuestionSession();
     window.open("https://www.zhihu.com/", "_blank", "noopener,noreferrer");
+  }
+
+  function handleOpenHistory() {
+    // Refreshed on open; the drawer does not need to rerender on every autosaved keystroke.
+    setRecentSessions(listRecentQuestionSessions());
+    setHistoryOpen(true);
+  }
+
+  function handleSelectHistory(selectedConversationId: string) {
+    const session = loadQuestionSession(selectedConversationId);
+    if (!session) return;
+    flushQuestionSession();
+    setActiveConversationId(selectedConversationId);
+    setRestorableSession(null);
+    hydrateQuestionSession(session);
+    setHistoryOpen(false);
   }
 
   function renderStage(stageToRender: QuestionCompilerStage) {
@@ -244,9 +353,9 @@ export function CompilerDemo() {
           <>
             {restorableSession && (
               <ResumeSessionCard
-                rawQuestion={restorableSession.rawQuestion}
+                session={restorableSession}
                 onResume={restoreLastSession}
-                onDiscard={handleNewQuestion}
+                onDismiss={dismissResumeCandidate}
               />
             )}
             <InputStage
@@ -319,7 +428,7 @@ export function CompilerDemo() {
 
   return (
     <main className="app-shell">
-      <AppHeader onNewQuestion={handleNewQuestion} />
+      <AppHeader onOpenHistory={handleOpenHistory} onNewQuestion={handleNewQuestion} />
       <div className="page-container">
         <StageTransitionViewport
           key={sceneResetEpoch}
@@ -328,6 +437,13 @@ export function CompilerDemo() {
           resetEpoch={sceneResetEpoch}
         />
       </div>
+      <SessionHistoryDrawer
+        open={historyOpen}
+        sessions={recentSessions}
+        activeConversationId={conversationId}
+        onClose={() => setHistoryOpen(false)}
+        onSelect={handleSelectHistory}
+      />
     </main>
   );
 }
