@@ -1,7 +1,7 @@
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, test } from "vitest";
-import { ClarificationStage } from "./clarification-stage";
+import { ClarificationStage, findFirstUnansweredIndex } from "./clarification-stage";
 import { CompiledQuestionPanel } from "./compiled-question-panel";
 import { CompilerDemo } from "./compiler-demo";
 import { CoverageStage } from "./coverage-stage";
@@ -88,6 +88,36 @@ describe("real pipeline UI", () => {
     expect(html).toContain("scene-transition-viewport");
     expect(html).toContain('data-stage="input"');
     expect(html).not.toContain("stage-scene-shell");
+  });
+
+  test("clarify focuses the first unanswered question", () => {
+    const questions = [
+      { id: "q1", question: "A?", options: ["1"] },
+      { id: "q2", question: "B?", options: ["2"] },
+      { id: "q3", question: "C?", options: ["3"] }
+    ];
+
+    expect(findFirstUnansweredIndex(questions, { q1: "1" })).toBe(1);
+  });
+
+  test("clarify renders one question instead of a four-card wall", () => {
+    const html = renderToStaticMarkup(
+      <ClarificationStage
+        questions={[
+          { id: "q1", question: "第一题？", options: ["A"] },
+          { id: "q2", question: "第二题？", options: ["B"] }
+        ]}
+        answers={{}}
+        answeredCount={0}
+        onAnswer={() => undefined}
+        onBack={() => undefined}
+        onContinue={() => undefined}
+      />
+    );
+
+    expect(html).toContain("第一题？");
+    expect(html).not.toContain("clarification-grid");
+    expect(html).toContain("1 / 2");
   });
 
   test("input and clarification controls expose micro-interaction hooks", () => {

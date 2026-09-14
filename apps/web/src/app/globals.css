@@ -557,20 +557,6 @@ textarea:focus-visible{
   line-height: 1.55;
 }
 
-.answer-progress{
-  display: inline-flex;
-  align-items: center;
-  min-height: 30px;
-  padding: 6px 10px;
-  border-radius: 999px;
-  color: var(--accent);
-  background: var(--accent-soft);
-  border: 1px solid #dddafe;
-  font-size: 11px;
-  font-weight: 750;
-  white-space: nowrap;
-}
-
 /* Input */
 .input-stage-card{
   position: relative;
@@ -687,57 +673,60 @@ textarea:focus{
   font-size: 14px;
 }
 
-/* Clarification */
-.clarification-grid{
+/* Clarification: one focused question at a time */
+.clarification-focus{
+  width: min(860px, 100%);
+  margin: 0 auto;
+}
+
+.clarification-focus-card{
+  display: grid;
+  gap: 18px;
+}
+
+.clarification-focus-card.is-answered{
+  border-left: 3px solid var(--success);
+  padding-left: 13px;
+}
+
+.clarification-focus-options{
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.clarification-focus-options .option-button{
+  width: 100%;
+  justify-content: flex-start;
+}
+
+.clarification-focus-footer{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 12px;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
 }
 
-.clarification-card{
-  position: relative;
-  min-width: 0;
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 13px;
-  padding: 16px;
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  background: var(--surface-muted);
-  transition: border-color var(--transition-ui), background var(--transition-ui), transform var(--transition-ui), box-shadow var(--transition-ui);
-}
-
-.clarification-card:hover{
-  border-color: #c8ced9;
-  background: #fbfbfd;
-}
-
-.clarification-card.is-answered{
-  border-color: #d6d3fb;
-  background: var(--surface-accent);
-}
-
-.clarification-number{
-  width: 29px;
-  height: 29px;
-  display: grid;
-  place-items: center;
-  border-radius: 9px;
-  color: var(--text-secondary);
-  background: #fff;
-  border: 1px solid var(--border);
+.clarification-position{
+  color: var(--text-tertiary);
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 750;
+  letter-spacing: 0.06em;
 }
 
-.is-answered .clarification-number{
-  color: #fff;
-  background: var(--accent);
-  border-color: var(--accent);
+.clarification-focus-nav{
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.clarification-content{
-  min-width: 0;
+.clarification-quiet-button{
+  min-height: 34px;
+  padding: 6px 11px;
+  font-size: 12px;
+  font-weight: 650;
 }
 
 .clarification-title-row{
@@ -747,16 +736,16 @@ textarea:focus{
   gap: 10px;
 }
 
-.clarification-content h3{
-  margin: 3px 0 0;
-  font-size: 14px;
+.clarification-focus-card h3{
+  margin: 0;
+  font-size: 17px;
   line-height: 1.5;
 }
 
-.clarification-content p{
-  margin: 5px 0 11px;
+.clarification-helper{
+  margin: 0;
   color: var(--text-secondary);
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.55;
 }
 
@@ -1716,12 +1705,8 @@ textarea:focus{
     align-items: flex-start;
   }
 
-  .clarification-grid{
+  .clarification-focus-options{
     grid-template-columns: 1fr;
-  }
-
-  .clarification-card{
-    padding: 14px;
   }
 
   .option-list{
