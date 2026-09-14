@@ -74,3 +74,71 @@
   min-width: 0;
   padding-bottom: 4px;
 }
+
+.coverageStage{
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.coverageGrid{
+  flex: 1 1 auto !important;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden !important;
+  align-content: stretch !important;
+}
+
+.footerStack{
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+.actionBar{
+  margin-top: 10px !important;
+}
+
+/*
+ * Coverage-only scene geometry.
+ * Do not modify SceneCanvas/StageTransitionViewport/globals.css.
+ * Apply identically to stable/incoming/outgoing roles.
+ */
+@media (min-width: 768px){
+  :global(.scene-canvas[data-stage="coverage"]){
+    overflow-y: hidden;
+  }
+
+  :global(.scene-canvas[data-stage="coverage"] .scene-safe-frame){
+    height: 100%;
+    min-height: 0;
+  }
+
+  :global(.scene-canvas[data-stage="coverage"] .scene-content){
+    height: 100%;
+    min-height: 0;
+  }
+}
+
+@media (max-width: 767px){
+  .coverageStage{
+    height: auto;
+    overflow: visible;
+  }
+
+  .coverageGrid{
+    overflow: visible !important;
+  }
+
+  .scrollCard{
+    min-height: 320px;
+    height: auto;
+  }
+
+  .scrollFrame{
+    min-height: 240px;
+  }
+}

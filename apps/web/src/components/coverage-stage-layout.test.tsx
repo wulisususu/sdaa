@@ -2,6 +2,7 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import { CoverageScrollRegion } from "./coverage-scroll-region";
+import { CoverageStage } from "./coverage-stage";
 import { KnowledgeCoverage } from "./knowledge-coverage";
 import { KnowledgeGap } from "./knowledge-gap";
 
@@ -74,5 +75,24 @@ describe("Coverage scroll regions", () => {
     expect(html).toContain('aria-label="还值得继续问什么"');
     expect(html).toContain("仍值得追问");
     expect((html.match(/data-coverage-scroll-region=/g) ?? []).length).toBe(1);
+  });
+
+  test("coverage renders a bounded grid and stage-wide footer", () => {
+    const html = renderToStaticMarkup(
+      <CoverageStage
+        coverage={[]}
+        gaps={[]}
+        evidence={[]}
+        status="success"
+        onBack={() => undefined}
+        onContinue={() => undefined}
+      />
+    );
+
+    expect(html).toContain('data-coverage-stage="true"');
+    expect(html).toContain('data-coverage-grid="true"');
+    expect(html).toContain('data-coverage-footer="true"');
+    expect(html).toContain("返回问题体检");
+    expect(html).toContain("编译我的问题");
   });
 });

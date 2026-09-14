@@ -4,6 +4,7 @@ import type {
   RetrievalStatus,
   SearchEvidenceItem
 } from "@ask-better/domain";
+import styles from "./coverage-stage.module.css";
 import { KnowledgeCoverage } from "./knowledge-coverage";
 import { KnowledgeGap } from "./knowledge-gap";
 
@@ -36,7 +37,10 @@ export function CoverageStage({
   onContinue
 }: CoverageStageProps) {
   return (
-    <section className="flow-stage flow-stage-wide">
+    <section
+      className={`flow-stage flow-stage-wide ${styles.coverageStage}`}
+      data-coverage-stage="true"
+    >
       <div className="flow-heading stage-section-heading">
         <div>
           <span className="section-kicker">04 / 05 · COVERAGE</span>
@@ -45,24 +49,29 @@ export function CoverageStage({
         </div>
       </div>
       <p className={`retrieval-status retrieval-status-${status}`}>{statusCopy[status]}</p>
-      <div className="knowledge-grid stage-knowledge-grid">
+      <div
+        className={`knowledge-grid stage-knowledge-grid ${styles.coverageGrid}`}
+        data-coverage-grid="true"
+      >
         <KnowledgeCoverage items={coverage} evidence={evidence} />
         <KnowledgeGap items={gaps} />
       </div>
-      {error && <p className="pipeline-error" role="alert">{error}</p>}
-      <div className="stage-action-bar detached-actions">
-        <button className="secondary-button" type="button" onClick={onBack}>返回问题体检</button>
-        <button
-          className="primary-button"
-          type="button"
-          onClick={onContinue}
-          disabled={loading}
-          aria-busy={loading}
-        >
-          {loading
-            ? <><span className="button-spinner" aria-hidden="true" />正在把信息编译成一个更清楚的问题…</>
-            : <>编译我的问题 <span aria-hidden="true">→</span></>}
-        </button>
+      <div className={styles.footerStack} data-coverage-footer="true">
+        {error && <p className="pipeline-error" role="alert">{error}</p>}
+        <div className={`stage-action-bar detached-actions ${styles.actionBar}`}>
+          <button className="secondary-button" type="button" onClick={onBack}>返回问题体检</button>
+          <button
+            className="primary-button"
+            type="button"
+            onClick={onContinue}
+            disabled={loading}
+            aria-busy={loading}
+          >
+            {loading
+              ? <><span className="button-spinner" aria-hidden="true" />正在把信息编译成一个更清楚的问题…</>
+              : <>编译我的问题 <span aria-hidden="true">→</span></>}
+          </button>
+        </div>
       </div>
     </section>
   );
