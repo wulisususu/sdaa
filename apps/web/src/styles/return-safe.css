@@ -1,0 +1,63 @@
+.action-icon{
+  flex:0 0 auto;
+}
+
+.resume-session-card{
+  width:min(900px, 100%);
+  display:grid;
+  gap:10px;
+  margin:0 auto 12px;
+  padding:14px 16px;
+  border:1px solid var(--border-strong);
+  border-radius:14px;
+  color:var(--text-primary);
+  background:var(--surface);
+  box-shadow:var(--shadow-sm);
+}
+
+.resume-session-heading{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  color:var(--text-secondary);
+  font-size:13px;
+  font-weight:700;
+}
+
+.resume-session-question{
+  margin:0;
+  overflow:hidden;
+  color:var(--text-primary);
+  font-size:15px;
+  font-weight:650;
+  line-height:1.5;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.resume-session-actions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+}
+
+@media (max-width:767px){
+  .compiled-actions{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+  }
+
+  .compiled-actions > .primary-button,
+  .compiled-actions > .secondary-button{
+    grid-column:1 / -1;
+  }
+
+  .resume-session-card{
+    margin-bottom:10px;
+    padding:13px 14px;
+  }
+
+  .resume-session-question{
+    font-size:14px;
+  }
+}

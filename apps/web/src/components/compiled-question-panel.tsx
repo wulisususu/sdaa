@@ -1,4 +1,5 @@
 import type { CompiledQuestion, PublishableQuestion } from "@ask-better/domain";
+import { ActionIcon, type ActionIconName } from "./action-icons";
 
 interface CompiledQuestionPanelProps {
   question: CompiledQuestion;
@@ -7,6 +8,7 @@ interface CompiledQuestionPanelProps {
   copyStatus?: "idle" | "copied" | "error";
   onCopy?: () => void;
   onReoptimize?: () => void;
+  onNewQuestion?: () => void;
   onOpenZhihu?: () => void;
 }
 
@@ -17,13 +19,19 @@ export function CompiledQuestionPanel({
   copyStatus = "idle",
   onCopy,
   onReoptimize,
+  onNewQuestion,
   onOpenZhihu
 }: CompiledQuestionPanelProps) {
   const copyLabel = copyStatus === "copied"
-    ? "✓ 已复制"
+    ? "已复制"
     : copyStatus === "error"
-      ? "复制失败，请重试"
-      : "复制知乎版问题";
+      ? "重试"
+      : "复制";
+  const copyIcon: ActionIconName = copyStatus === "copied"
+    ? "check"
+    : copyStatus === "error"
+      ? "retry"
+      : "copy";
 
   return (
     <section className="workspace-panel compiled-panel after-card" data-motion="after">
@@ -39,7 +47,6 @@ export function CompiledQuestionPanel({
 
       <div className="panel-content">
         <div className="compiled-panel-body">
-          {/* Only the long publishable body may scroll internally; the primary CTA stays outside. */}
           <div className="compiled-publishable-scroll">
             <article className="compiled-card publishable-card">
               <span className="compiled-label">最终标题</span>
@@ -80,12 +87,22 @@ export function CompiledQuestionPanel({
             onClick={onCopy}
             aria-live="polite"
           >
+            <ActionIcon name={copyIcon} />
             {copyLabel}
           </button>
-          <button className="secondary-button" type="button" onClick={onOpenZhihu}>前往知乎 ↗</button>
-          <button className="ghost-button" type="button" onClick={onReoptimize}>重新优化</button>
+          <button className="secondary-button" type="button" onClick={onOpenZhihu}>
+            <ActionIcon name="external-link" />
+            打开知乎
+          </button>
+          <button className="ghost-button" type="button" onClick={onReoptimize}>
+            <ActionIcon name="sparkles" />
+            继续优化
+          </button>
+          <button className="ghost-button" type="button" onClick={onNewQuestion}>
+            <ActionIcon name="plus" />
+            新问题
+          </button>
         </div>
-        <p className="publish-hint">复制后前往知乎发起提问</p>
       </div>
     </section>
   );

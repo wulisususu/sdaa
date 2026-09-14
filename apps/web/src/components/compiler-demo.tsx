@@ -12,18 +12,25 @@ import {
   type QuestionCompilerStage,
   type RetrieveResult
 } from "@ask-better/domain";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   analyzeQuestionApi,
   compileQuestionApi,
   retrieveQuestionApi
 } from "../lib/api-client";
+import {
+  clearCompletedSession,
+  loadCompletedSession,
+  saveCompletedSession,
+  type StoredCompletedSessionV1
+} from "../lib/completed-session-storage";
 import { AppHeader } from "./app-header";
 import { ClarificationStage } from "./clarification-stage";
 import { CoverageStage } from "./coverage-stage";
 import { DiagnosisStage } from "./diagnosis-stage";
 import { InputStage } from "./input-stage";
 import { ResultStage } from "./result-stage";
+import { ResumeSessionCard } from "./resume-session-card";
 import { StageTransitionViewport } from "./stage-transition-viewport";
 
 type CopyStatus = "idle" | "copied" | "error";
@@ -45,8 +52,13 @@ export function CompilerDemo() {
   const [operation, setOperation] = useState<Operation>("idle");
   const [error, setError] = useState<string | null>(null);
   const [copyStatus, setCopyStatus] = useState<CopyStatus>("idle");
+  const [restorableSession, setRestorableSession] = useState<StoredCompletedSessionV1 | null>(null);
   const [sceneResetEpoch, setSceneResetEpoch] = useState(0);
   const requestVersion = useRef(0);
+
+  useEffect(() => {
+    setRestorableSession(loadCompletedSession());
+  }, []);
 
   const ready = isRawQuestionReady(rawQuestion);
   const clarificationQuestions = analysis?.clarificationQuestions ?? [];
@@ -156,6 +168,8 @@ export function CompilerDemo() {
       if (version !== requestVersion.current) return;
       setCompiled(nextCompiled);
       setCopyStatus("idle");
+      saveCompletedSession({ rawQuestion, answers, analysis, retrieval, compiled: nextCompiled });
+      setRestorableSession(null);
       transitionTo("result");
     } catch (nextError) {
       if (version === requestVersion.current) setError(safeErrorMessage(nextError));
@@ -176,6 +190,8 @@ export function CompilerDemo() {
 
   function handleNewQuestion() {
     cancelPending();
+    clearCompletedSession();
+    setRestorableSession(null);
     setRawQuestion("");
     setAnswers({});
     setAnalysis(null);
@@ -184,6 +200,24 @@ export function CompilerDemo() {
     setError(null);
     setCopyStatus("idle");
     transitionTo("input");
+    setSceneResetEpoch((value) => value + 1);
+  }
+
+  function restoreLastSession() {
+    const session = restorableSession;
+    if (!session) return;
+    cancelPending();
+    setRawQuestion(session.rawQuestion);
+    setAnswers(session.answers);
+    setAnalysis(session.analysis);
+    setRetrieval(session.retrieval);
+    setCompiled(session.compiled);
+    setCopyStatus("idle");
+    setError(null);
+    setRestorableSession(null);
+    transitionTo("result");
+    // Recovery is hydration, not a pipeline step. Remount the visual viewport so Result
+    // becomes the initial stable scene instead of animating Input -> Result.
     setSceneResetEpoch((value) => value + 1);
   }
 
@@ -197,6 +231,9 @@ export function CompilerDemo() {
   }
 
   function handleOpenZhihu() {
+    if (analysis && retrieval && compiled) {
+      saveCompletedSession({ rawQuestion, answers, analysis, retrieval, compiled });
+    }
     window.open("https://www.zhihu.com/", "_blank", "noopener,noreferrer");
   }
 
@@ -204,14 +241,23 @@ export function CompilerDemo() {
     switch (stageToRender) {
       case "input":
         return (
-          <InputStage
-            rawQuestion={rawQuestion}
-            ready={ready}
-            loading={operation === "analyzing"}
-            error={error}
-            onChange={handleRawQuestionChange}
-            onContinue={handleAnalyze}
-          />
+          <>
+            {restorableSession && (
+              <ResumeSessionCard
+                rawQuestion={restorableSession.rawQuestion}
+                onResume={restoreLastSession}
+                onDiscard={handleNewQuestion}
+              />
+            )}
+            <InputStage
+              rawQuestion={rawQuestion}
+              ready={ready}
+              loading={operation === "analyzing"}
+              error={error}
+              onChange={handleRawQuestionChange}
+              onContinue={handleAnalyze}
+            />
+          </>
         );
 
       case "clarify":
@@ -264,6 +310,7 @@ export function CompilerDemo() {
             copyStatus={copyStatus}
             onCopy={handleCopy}
             onReoptimize={handleReoptimize}
+            onNewQuestion={handleNewQuestion}
             onOpenZhihu={handleOpenZhihu}
           />
         ) : null;
