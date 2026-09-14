@@ -71,13 +71,6 @@
   padding: 16px;
 }
 
-.publish-hint {
-  margin: 10px 0 0;
-  color: var(--text-tertiary, #6b7280);
-  font-size: 13px;
-  line-height: 1.6;
-}
-
 @media (max-width: 720px) {
   .publishable-context {
     font-size: 14px;

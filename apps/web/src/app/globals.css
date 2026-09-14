@@ -1769,13 +1769,41 @@ textarea:focus {
   box-shadow: none;
 }
 
-.result-footer-actions {
+.resume-session-card {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--border-strong);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.resume-session-heading {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  gap: 10px;
-  color: var(--text-tertiary);
-  font-size: 10.5px;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.resume-session-question {
+  margin: 0;
+  overflow: hidden;
+  color: var(--text-primary);
+  font-size: 15px;
+  font-weight: 650;
+  line-height: 1.5;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.resume-session-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 /* Legacy workspace helpers retained for compatibility */
@@ -2083,10 +2111,12 @@ textarea:focus {
 
   .compiled-actions {
     display: grid;
+    grid-template-columns: 1fr 1fr;
   }
 
-  .compiled-actions > button {
-    width: 100%;
+  .compiled-actions > .primary-button,
+  .compiled-actions > .secondary-button {
+    grid-column: 1 / -1;
   }
 
   .stage-action-bar,
@@ -2113,8 +2143,12 @@ textarea:focus {
     font-size: 11px;
   }
 
-  .result-footer-actions {
-    justify-content: space-between;
+  .resume-session-card {
+    padding: 13px 14px;
+  }
+
+  .resume-session-question {
+    font-size: 14px;
   }
 
   .desktop-only {
@@ -2166,10 +2200,6 @@ textarea:focus {
   .stage-action-bar,
   .detached-actions {
     grid-template-columns: 1fr;
-  }
-
-  .result-footer-actions {
-    display: grid;
   }
 }
 

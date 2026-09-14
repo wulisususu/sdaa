@@ -177,7 +177,7 @@ describe("real pipeline UI", () => {
     expect(html).toContain(publishableQuestion.title);
     expect(html).toContain("查看编译细节");
     expect(html).toContain("Question IR");
-    expect(html).toContain("✓ 已复制");
+    expect(html).toContain("已复制");
   });
 
   test("copy feedback distinguishes success and error states", () => {
@@ -202,7 +202,9 @@ describe("real pipeline UI", () => {
       <CompiledQuestionPanel question={question} publishableQuestion={publishableQuestion} copyStatus="error" />
     );
 
-    expect(copied).toContain("✓ 已复制");
-    expect(failed).toContain("复制失败，请重试");
+    expect(copied).toContain(">已复制</button>");
+    expect(copied).toContain('data-icon="check"');
+    expect(failed).toContain(">重试</button>");
+    expect(failed).toContain('data-icon="retry"');
   });
 });

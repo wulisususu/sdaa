@@ -22,23 +22,79 @@ const publishableQuestion = {
   questions: ["四项合计每月大概在什么区间比较合适？", "吃饭、交通、日用品分别大概按多少估算？"]
 };
 
-describe("publishable CTA", () => {
-  test("points at a verified destination instead of the removed ask deep link", () => {
-    const html = renderToStaticMarkup(
-      <CompiledQuestionPanel question={question} publishableQuestion={publishableQuestion} />
-    );
+function renderPanel(copyStatus: "idle" | "copied" | "error" = "idle") {
+  return renderToStaticMarkup(
+    <CompiledQuestionPanel
+      question={question}
+      publishableQuestion={publishableQuestion}
+      copyStatus={copyStatus}
+      onCopy={() => undefined}
+      onReoptimize={() => undefined}
+      onNewQuestion={() => undefined}
+      onOpenZhihu={() => undefined}
+    />
+  );
+}
 
-    expect(html).toContain("前往知乎");
-    expect(html).toContain("复制知乎版问题");
-    expect(html).toContain("复制后前往知乎发起提问");
+describe("publishable CTA", () => {
+  test("result actions use the locked concise labels", () => {
+    const html = renderPanel();
+
+    expect(html).toContain(">复制</button>");
+    expect(html).toContain(">打开知乎</button>");
+    expect(html).toContain(">继续优化</button>");
+    expect(html).toContain(">新问题</button>");
+  });
+
+  test("result actions drop the retired verbose copy", () => {
+    const html = renderPanel();
+
+    expect(html).not.toContain("复制知乎版问题");
+    expect(html).not.toContain("前往知乎");
+    expect(html).not.toContain("复制后前往知乎发起提问");
+    expect(html).not.toContain("还想整理另一个问题？");
+    expect(html).not.toContain("新建一个问题");
+    expect(html).not.toContain("publish-hint");
+  });
+
+  test("copy feedback states use icon plus a concise label", () => {
+    const copied = renderPanel("copied");
+    const failed = renderPanel("error");
+
+    expect(copied).toContain(">已复制</button>");
+    expect(copied).toContain('data-icon="check"');
+    expect(failed).toContain(">重试</button>");
+    expect(failed).toContain('data-icon="retry"');
+    expect(failed).not.toContain("复制失败，请重试");
+  });
+
+  test("result actions expose thin-line icon hooks", () => {
+    const html = renderPanel();
+
+    for (const icon of ["copy", "external-link", "sparkles", "plus"]) {
+      expect(html).toContain(`data-icon="${icon}"`);
+    }
+    expect(html).toContain('stroke="currentColor"');
+    expect(html).toContain('stroke-width="1.8"');
+    expect(html).toContain('aria-hidden="true"');
+  });
+
+  test("result actions render no emoji glyphs", () => {
+    const html = renderPanel();
+
+    expect(html).not.toContain("↗");
+    expect(html).not.toMatch(/✓[^<]*已复制/);
+  });
+
+  test("points at a verified destination instead of the removed ask deep link", () => {
+    const html = renderPanel();
+
     expect(html).toContain("mobile-sticky-actions");
     expect(html).not.toContain(removedAskRoute);
   });
 
   test("never claims a publishing capability that does not exist", () => {
-    const html = renderToStaticMarkup(
-      <CompiledQuestionPanel question={question} publishableQuestion={publishableQuestion} />
-    );
+    const html = renderPanel();
 
     for (const forbidden of ["打开知乎提问页", "一键发布", "直接发布", "已发布"]) {
       expect(html).not.toContain(forbidden);
@@ -46,13 +102,32 @@ describe("publishable CTA", () => {
   });
 
   test("keeps the copy action as the primary CTA and hides the IR by default", () => {
-    const html = renderToStaticMarkup(
-      <CompiledQuestionPanel question={question} publishableQuestion={publishableQuestion} />
-    );
+    const html = renderPanel();
 
-    expect(html).toContain("复制知乎版问题");
+    expect(html).toMatch(/<button class="primary-button copy-button copy-idle"[^>]*>[^]*?>复制<\/button>/);
     expect(html).toMatch(/<details[^>]*class="compiler-details"(?![^>]*\bopen\b)/);
     expect(html).toContain("Question IR");
+  });
+
+  test("result stage hands new-question into the unified action area", () => {
+    const html = renderToStaticMarkup(
+      <ResultStage
+        rawQuestion="原始问题"
+        question={question}
+        publishableQuestion={publishableQuestion}
+        evidenceUsed={false}
+        copyStatus="idle"
+        onCopy={() => undefined}
+        onReoptimize={() => undefined}
+        onNewQuestion={() => undefined}
+        onOpenZhihu={() => undefined}
+      />
+    );
+
+    expect(html).toContain(">新问题</button>");
+    expect(html).not.toContain("result-footer-actions");
+    expect(html).not.toContain("还想整理另一个问题？");
+    expect(html).not.toContain("新建一个问题");
   });
 
   test("result exposes before, after, and action motion hooks", () => {
