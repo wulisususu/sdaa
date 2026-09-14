@@ -83,6 +83,13 @@ describe("real pipeline UI", () => {
     expect(html).not.toContain("不会自动发布");
   });
 
+  test("compiler routes its active stage through the transition viewport", () => {
+    const html = renderToStaticMarkup(<CompilerDemo />);
+    expect(html).toContain("scene-transition-viewport");
+    expect(html).toContain('data-stage="input"');
+    expect(html).not.toContain("stage-scene-shell");
+  });
+
   test("input and clarification controls expose micro-interaction hooks", () => {
     const input = renderToStaticMarkup(
       <InputStage rawQuestion="AI 应用开发应该怎么学？" ready onChange={() => undefined} onContinue={() => undefined} />

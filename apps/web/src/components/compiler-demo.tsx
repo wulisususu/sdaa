@@ -25,7 +25,7 @@ import { CoverageStage } from "./coverage-stage";
 import { DiagnosisStage } from "./diagnosis-stage";
 import { InputStage } from "./input-stage";
 import { ResultStage } from "./result-stage";
-import { StageSceneShell } from "./stage-scene-shell";
+import { StageTransitionViewport } from "./stage-transition-viewport";
 
 type CopyStatus = "idle" | "copied" | "error";
 type Operation = "idle" | "analyzing" | "retrieving" | "compiling";
@@ -55,6 +55,7 @@ export function CompilerDemo() {
   const [operation, setOperation] = useState<Operation>("idle");
   const [error, setError] = useState<string | null>(null);
   const [copyStatus, setCopyStatus] = useState<CopyStatus>("idle");
+  const [sceneResetEpoch, setSceneResetEpoch] = useState(0);
   const requestVersion = useRef(0);
 
   const ready = isRawQuestionReady(rawQuestion);
@@ -203,6 +204,7 @@ export function CompilerDemo() {
     setCopyStatus("idle");
     transitionTo("input");
     setMaxVisited("input");
+    setSceneResetEpoch((value) => value + 1);
   }
 
   function handleReoptimize() {
@@ -219,42 +221,87 @@ export function CompilerDemo() {
     window.open("https://www.zhihu.com/", "_blank", "noopener,noreferrer");
   }
 
+  function renderStage(stageToRender: QuestionCompilerStage) {
+    switch (stageToRender) {
+      case "input":
+        return (
+          <InputStage
+            rawQuestion={rawQuestion}
+            ready={ready}
+            loading={operation === "analyzing"}
+            error={error}
+            onChange={handleRawQuestionChange}
+            onContinue={handleAnalyze}
+          />
+        );
+
+      case "clarify":
+        return analysis ? (
+          <ClarificationStage
+            questions={analysis.clarificationQuestions}
+            answers={answers}
+            answeredCount={answeredCount}
+            onAnswer={handleAnswer}
+            onBack={back}
+            onContinue={handleClarifyContinue}
+          />
+        ) : null;
+
+      case "diagnose":
+        return analysis ? (
+          <DiagnosisStage
+            rawQuestion={rawQuestion}
+            intent={analysis.intent}
+            diagnostics={analysis.diagnostics}
+            loading={operation === "retrieving"}
+            error={error}
+            onBack={back}
+            onContinue={handleRetrieve}
+          />
+        ) : null;
+
+      case "coverage":
+        return retrieval ? (
+          <CoverageStage
+            coverage={retrieval.existingCoverage}
+            gaps={retrieval.knowledgeGaps}
+            evidence={retrieval.evidence}
+            status={retrieval.status}
+            loading={operation === "compiling"}
+            error={error}
+            onBack={back}
+            onContinue={handleCompile}
+          />
+        ) : null;
+
+      case "result":
+        return compiled ? (
+          <ResultStage
+            rawQuestion={rawQuestion}
+            question={compiled.compiledQuestion}
+            publishableQuestion={compiled.publishableQuestion}
+            evidenceUsed={compiled.evidenceUsed}
+            warnings={compiled.warnings}
+            copyStatus={copyStatus}
+            onCopy={handleCopy}
+            onReoptimize={handleReoptimize}
+            onNewQuestion={handleNewQuestion}
+            onOpenZhihu={handleOpenZhihu}
+          />
+        ) : null;
+    }
+  }
+
   return (
     <main className="app-shell">
       <AppHeader onNewQuestion={handleNewQuestion} />
       <div className="page-container">
-        <StageSceneShell stage={stage} previousStage={null}>
-          {stage === "input" && (
-          <InputStage rawQuestion={rawQuestion} ready={ready} loading={operation === "analyzing"} error={error} onChange={handleRawQuestionChange} onContinue={handleAnalyze} />
-        )}
-
-        {stage === "clarify" && analysis && (
-          <ClarificationStage questions={analysis.clarificationQuestions} answers={answers} answeredCount={answeredCount} onAnswer={handleAnswer} onBack={back} onContinue={handleClarifyContinue} />
-        )}
-
-        {stage === "diagnose" && analysis && (
-          <DiagnosisStage rawQuestion={rawQuestion} intent={analysis.intent} diagnostics={analysis.diagnostics} loading={operation === "retrieving"} error={error} onBack={back} onContinue={handleRetrieve} />
-        )}
-
-        {stage === "coverage" && retrieval && (
-          <CoverageStage coverage={retrieval.existingCoverage} gaps={retrieval.knowledgeGaps} evidence={retrieval.evidence} status={retrieval.status} loading={operation === "compiling"} error={error} onBack={back} onContinue={handleCompile} />
-        )}
-
-          {stage === "result" && compiled && (
-            <ResultStage
-              rawQuestion={rawQuestion}
-              question={compiled.compiledQuestion}
-              publishableQuestion={compiled.publishableQuestion}
-              evidenceUsed={compiled.evidenceUsed}
-              warnings={compiled.warnings}
-              copyStatus={copyStatus}
-              onCopy={handleCopy}
-              onReoptimize={handleReoptimize}
-              onNewQuestion={handleNewQuestion}
-              onOpenZhihu={handleOpenZhihu}
-            />
-          )}
-        </StageSceneShell>
+        <StageTransitionViewport
+          key={sceneResetEpoch}
+          targetStage={stage}
+          scene={renderStage(stage)}
+          resetEpoch={sceneResetEpoch}
+        />
       </div>
     </main>
   );
