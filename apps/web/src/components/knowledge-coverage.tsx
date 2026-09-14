@@ -1,5 +1,8 @@
+"use client";
+
 import type { KnowledgeCoverageItem, SearchEvidenceItem } from "@ask-better/domain";
 import { useState, type CSSProperties } from "react";
+import { EvidenceDrawer } from "./evidence-drawer";
 
 interface KnowledgeCoverageProps {
   items: KnowledgeCoverageItem[];
@@ -12,21 +15,12 @@ function strengthLabel(strength: KnowledgeCoverageItem["strength"]): string {
   return "较少";
 }
 
-export function getVisibleEvidence<T>(
-  items: T[],
-  expanded: boolean,
-  initialCount = 5
-): T[] {
-  return expanded || items.length <= initialCount
-    ? items
-    : items.slice(0, initialCount);
-}
+/** Fixed preview size: the main scene stays inside one viewport. */
+export const EVIDENCE_PREVIEW_LIMIT = 4;
 
 export function KnowledgeCoverage({ items, evidence }: KnowledgeCoverageProps) {
-  const [expanded, setExpanded] = useState(false);
-  const initialEvidenceCount = 5;
-  const visibleEvidence = getVisibleEvidence(evidence, expanded, initialEvidenceCount);
-  const canExpand = evidence.length > initialEvidenceCount;
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const previewEvidence = evidence.slice(0, EVIDENCE_PREVIEW_LIMIT);
 
   return (
     <section className="knowledge-card">
@@ -67,14 +61,13 @@ export function KnowledgeCoverage({ items, evidence }: KnowledgeCoverageProps) {
             <span className="evidence-count">{evidence.length} 条 Evidence</span>
           </div>
           <div className="evidence-source-list">
-            {visibleEvidence.map((item, index) => {
-              const initialVisible = index < initialEvidenceCount;
-              return (
+            {previewEvidence.map((item, index) => (
               <article
                 className="evidence-source-item"
-                data-motion-item={initialVisible ? "evidence" : "evidence-secondary"}
+                data-evidence-preview="true"
+                data-motion-item="evidence"
                 key={`${item.id}-${item.url}`}
-                style={initialVisible ? { "--motion-delay": `${index * 70}ms` } as CSSProperties : undefined}
+                style={{ "--motion-delay": `${index * 70}ms` } as CSSProperties}
               >
                 <a href={item.url} target="_blank" rel="noreferrer">
                   <span>{item.title}</span>
@@ -87,23 +80,25 @@ export function KnowledgeCoverage({ items, evidence }: KnowledgeCoverageProps) {
                   <span>评论 {item.commentCount}</span>
                 </div>
               </article>
-              );
-            })}
+            ))}
           </div>
-          {canExpand && (
+          {evidence.length > EVIDENCE_PREVIEW_LIMIT && (
             <button
               type="button"
               className="evidence-toggle"
-              aria-expanded={expanded}
-              onClick={() => setExpanded((current) => !current)}
+              onClick={() => setDrawerOpen(true)}
             >
-              {expanded
-                ? "收起参考来源"
-                : `查看全部 ${evidence.length} 条参考来源`}
+              查看全部 {evidence.length} 条参考来源
             </button>
           )}
         </div>
       )}
+
+      <EvidenceDrawer
+        open={drawerOpen}
+        items={evidence}
+        onClose={() => setDrawerOpen(false)}
+      />
     </section>
   );
 }

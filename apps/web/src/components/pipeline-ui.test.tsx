@@ -6,7 +6,27 @@ import { CompiledQuestionPanel } from "./compiled-question-panel";
 import { CompilerDemo } from "./compiler-demo";
 import { CoverageStage } from "./coverage-stage";
 import { DiagnosisStage } from "./diagnosis-stage";
+import { EvidenceDrawer } from "./evidence-drawer";
 import { InputStage } from "./input-stage";
+import { KnowledgeCoverage } from "./knowledge-coverage";
+
+function makeEvidence(count: number) {
+  return Array.from({ length: count }, (_, index) => ({
+    id: String(index + 1),
+    title: `证据 ${index + 1}`,
+    contentType: "Question",
+    summary: `摘要 ${index + 1}`,
+    url: `https://www.zhihu.com/question/${index + 1}`,
+    author: "答主",
+    editedAt: 1710000000 + index,
+    rankingScore: 0.9,
+    authorityLevel: "2",
+    voteUpCount: 10 + index,
+    commentCount: index,
+    selectedComments: [],
+    source: "zhihu" as const
+  }));
+}
 
 const evidence = [{
   id: "123",
@@ -188,6 +208,26 @@ describe("real pipeline UI", () => {
     );
     expect(html).toContain("本次未加入知乎已有讨论证据，仍可继续整理问题");
     expect(html).not.toContain("知乎检索结果</span>");
+  });
+
+  test("coverage keeps only four evidence items in the main scene", () => {
+    const html = renderToStaticMarkup(
+      <KnowledgeCoverage items={[]} evidence={makeEvidence(6)} />
+    );
+
+    expect(html).toContain("查看全部 6 条参考来源");
+    expect((html.match(/data-evidence-preview=/g) ?? []).length).toBe(4);
+    expect(html).not.toContain("收起参考来源");
+  });
+
+  test("evidence drawer exposes bounded dialog semantics", () => {
+    const html = renderToStaticMarkup(
+      <EvidenceDrawer open items={makeEvidence(2)} onClose={() => undefined} />
+    );
+
+    expect(html).toContain('role="dialog"');
+    expect(html).toContain('aria-modal="true"');
+    expect(html).toContain("全部参考来源");
   });
 
   test("result panel prioritizes the publishable question and keeps IR collapsible", () => {
