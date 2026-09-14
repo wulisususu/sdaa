@@ -108,12 +108,13 @@
  * Do not modify SceneCanvas/StageTransitionViewport/globals.css.
  * Apply identically to stable/incoming/outgoing roles.
  *
- * Breakpoint: 1280px is exactly where `globals.css` stops collapsing `.knowledge-grid` to a single
- * column. Above it the two cards sit side by side and each one gets a usable internal scroll
- * window; below it the two cards would be stacked inside a bounded box, which shrank the coverage
- * window to ~160px on a 1024x768 screen. So the bounded one-viewport layout is applied only where
- * the desktop two-column grid exists, and everything below that keeps the ordinary scrollable
- * canvas — the scene must never trade "scrolls a little" for "clipped and unreachable".
+ * Breakpoint: 1024px is the narrowest desktop width the coverage stage must keep to a single
+ * viewport, so the bounded layout starts there. `globals.css` collapses `.knowledge-grid` to one
+ * column below 1280px, and inside a fixed-height box that would stack the two cards and leave each
+ * internal scroll window about 160px tall — measured at 1024x768. The coverage stage therefore
+ * pins the desktop two-column grid for itself in the same range (1024px is still wide enough for
+ * both columns to hold real content: ~540px + ~375px). Below 1024px — small tablets and phones —
+ * the stage keeps the ordinary scrollable canvas, where page scrolling is expected.
  *
  * The definite-row declaration below is load-bearing, not cosmetic. `globals.css` lays the safe
  * frame out as `display: grid; grid-template-rows: min-content; align-content: start`, and a grid
@@ -130,7 +131,11 @@
  * size (no scrollbar appears), and if the geometry ever regresses the worst case is a scrollbar
  * instead of a lost primary action.
  */
-@media (min-width: 1280px){
+@media (min-width: 1024px){
+  .coverageGrid{
+    grid-template-columns: minmax(0, 1.18fr) minmax(280px, 0.82fr) !important;
+  }
+
   :global(.scene-canvas[data-stage="coverage"] .scene-safe-frame){
     height: 100%;
     min-height: 0;

@@ -128,7 +128,7 @@ describe("Coverage one-viewport geometry contract", () => {
     // globals.css lays .scene-safe-frame out as `display: grid; grid-template-rows: min-content`,
     // and a min-content row is indefinite — so `height: 100%` on .scene-content silently resolves
     // to `auto` and the whole percentage chain below it collapses. Only a definite row fixes it.
-    const block = mediaBlock(moduleCss, "(min-width: 1280px)");
+    const block = mediaBlock(moduleCss, "(min-width: 1024px)");
     const frameRule = block.match(
       /:global\(\.scene-canvas\[data-stage="coverage"\] \.scene-safe-frame\)\{([^}]*)\}/
     );
@@ -142,21 +142,27 @@ describe("Coverage one-viewport geometry contract", () => {
     );
   });
 
-  test("the bounded layout starts where globals keeps the two-column coverage grid", () => {
-    // Below that width globals.css collapses .knowledge-grid to a single column, so the two cards
-    // would be stacked inside the same bounded box and each internal scroll window shrinks to
-    // ~160px. The bound must therefore sit exactly one pixel above the collapse range.
+  test("the bounded layout starts at 1024px and pins the two-column grid there", () => {
+    // 1024x768 is the narrowest desktop size the stage must keep to one viewport, so the bound is
+    // fixed by that requirement rather than by a convenient breakpoint.
+    expect(moduleCss).toContain("@media (min-width: 1024px){");
+
+    // globals.css still collapses .knowledge-grid to one column below 1280px. Inside the bounded
+    // box that would stack the two cards and shrink each internal scroll window to ~160px, so the
+    // coverage stage must pin the desktop columns for itself — and that collapse range must still
+    // cover 1024px, otherwise this override has become dead weight and should be removed.
     const collapseCondition = globalsCss
       .match(/@media \(min-width: 768px\) and \(max-width: \d+px\)/)![0]
       .replace("@media ", "");
     const collapseBlock = mediaBlock(globalsCss, collapseCondition);
+    const collapseUpperBound = Number(collapseCondition.match(/max-width: (\d+)px/)![1]);
 
     expect(collapseBlock).toMatch(/\.knowledge-grid[\s\S]*?grid-template-columns:\s*1fr/);
+    expect(1024).toBeLessThanOrEqual(collapseUpperBound);
+    expect(collapseUpperBound).toBeLessThan(1280);
 
-    const boundary = Number(collapseCondition.match(/max-width: (\d+)px/)![1]) + 1;
-    expect(moduleCss).toContain(`@media (min-width: ${boundary}px){`);
-    expect(mediaBlock(moduleCss, `(min-width: ${boundary}px)`)).toContain(
-      '.scene-canvas[data-stage="coverage"]'
+    expect(mediaBlock(moduleCss, "(min-width: 1024px)")).toMatch(
+      /\.coverageGrid\{[^}]*grid-template-columns:\s*minmax\([^)]*\)\s*minmax\([^)]*\)\s*!important/
     );
   });
 
@@ -164,8 +170,25 @@ describe("Coverage one-viewport geometry contract", () => {
     // Forcing `overflow-y: hidden` is what turned a geometry regression into an unreachable CTA.
     // Measured overflow is 0 at every desktop size, so `auto` shows no scrollbar while keeping a
     // scrollable worst case. Never re-add a hidden-overflow override here.
-    for (const condition of ["(min-width: 1280px)"]) {
-      expect(mediaBlock(moduleCss, condition)).not.toMatch(/overflow(-y)?:\s*hidden/);
-    }
+    expect(mediaBlock(moduleCss, "(min-width: 1024px)")).not.toMatch(/overflow(-y)?:\s*hidden/);
+  });
+});
+
+describe("Coverage keyboard contract", () => {
+  test("keyboard scrolling uses the native scroll container, never a global key listener", () => {
+    // The plan forbids document/window-level keydown listeners for keyboard scrolling: a focused
+    // overflow container already gets Arrow/Page/Home/End from the browser for free, and a global
+    // listener would additionally steal those keys from the rest of the app. Verified in a browser:
+    // ArrowDown/ArrowUp, PageDown/PageUp, End (-> max) and Home (-> 0) all work on both regions
+    // after Tab focus and after a plain click on non-focusable content inside a region.
+    const source = readFileSync(new URL("./coverage-scroll-region.tsx", import.meta.url), "utf8");
+    // Comments are stripped first so a comment *mentioning* keydown does not trip the guard.
+    const code = source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
+
+    expect(code).not.toMatch(/keydown|onKeyDown|onKeyUp|onKeyPress/i);
+    expect(code).not.toMatch(/addEventListener\(\s*["'`]key/);
+    // Native keyboard scrolling only works because the region is reachable by Tab.
+    expect(source).toMatch(/tabIndex=\{0\}/);
+    expect(source).toMatch(/aria-label=\{ariaLabel\}/);
   });
 });
