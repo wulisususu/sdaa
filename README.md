@@ -89,6 +89,19 @@ Access Secret 仅存在于服务端。浏览器不会收到知乎 Secret、LLM A
 
 最终 Compile 结果会标记本次是否实际使用了知乎 Evidence。
 
+### Local question-session recovery
+
+The Web app keeps the current question workflow in a versioned local-first session store:
+
+- every non-empty question receives a stable `conversationId`;
+- Input / Clarify / Diagnose / Coverage / Result stable state is autosaved locally;
+- refresh or returning to `ask.wulisu.icu` restores the active stable stage without replaying completed API calls;
+- pending Analyze / Retrieve / Compile operations are never restored as loading states;
+- the latest 20 question sessions are available from Recent History;
+- the previous `ask-better:completed-session:v1` completed result is migrated to V2 once when valid.
+
+This remains browser-local. OAuth/account sync and cross-device history are outside the current scope.
+
 ## 安全与产品边界
 
 - Question Compiler **不得替用户编造个人背景或约束条件**。最终问题中的用户事实只能来自原始输入和用户明确选择/补充的信息。
