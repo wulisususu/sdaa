@@ -110,6 +110,16 @@ export function createConversationId(): string {
   return globalThis.crypto.randomUUID();
 }
 
+/**
+ * Longest question the store accepts. Matches `AnalyzeRequestSchema.rawQuestion`'s max, and the
+ * Input stage caps typing at the same number.
+ *
+ * This is a consistency guard, not a convenience: the index is one JSON document, so a single
+ * oversized `rawQuestion` would make the whole index fail to parse — silently hiding every other
+ * session and breaking active restore as well.
+ */
+export const PERSISTED_RAW_QUESTION_MAX = 1000;
+
 function sessionKey(conversationId: string): string {
   return `${QUESTION_SESSION_KEY_PREFIX}${conversationId}`;
 }
@@ -252,21 +262,31 @@ export function saveQuestionSession(draft: QuestionSessionDraft, now: number = D
   const storage = getStorage();
   if (!storage) return false;
 
+  // Reject a payload the schemas cannot read back. Writing it would corrupt the shared index
+  // and make every other session unreadable.
+  if (draft.rawQuestion.length > PERSISTED_RAW_QUESTION_MAX) return false;
+
   const envelope: StoredQuestionSessionV2 = {
     ...draft,
     version: 2,
     updatedAt: now
   };
 
-  if (!writeRaw(storage, sessionKey(draft.conversationId), JSON.stringify(envelope))) {
+  // Serialize the PARSED envelope, not the raw input: Zod both rejects unreadable payloads and
+  // strips unknown keys, so transient UI state cannot be smuggled into storage by spreading a
+  // wider object into the draft.
+  const validated = StoredQuestionSessionV2Schema.safeParse(envelope);
+  if (!validated.success) return false;
+
+  if (!writeRaw(storage, sessionKey(draft.conversationId), JSON.stringify(validated.data))) {
     return false;
   }
 
   const current = loadIndexFromStorage(storage);
-  const nextEntry = toSummary(envelope);
+  const nextEntry = toSummary(validated.data);
   const entries = [
     nextEntry,
-    ...current.entries.filter((entry) => entry.conversationId !== envelope.conversationId)
+    ...current.entries.filter((entry) => entry.conversationId !== validated.data.conversationId)
   ]
     .sort((a, b) => b.updatedAt - a.updatedAt)
     .slice(0, QUESTION_SESSION_LIMIT);
@@ -279,7 +299,7 @@ export function saveQuestionSession(draft: QuestionSessionDraft, now: number = D
 
   return writeIndex(storage, {
     version: 2,
-    activeConversationId: envelope.conversationId,
+    activeConversationId: validated.data.conversationId,
     entries
   });
 }
