@@ -1,117 +1,148 @@
 # 问得更好 · Ask Better
 
-知乎 AI 提问编译器：把模糊需求，整理成更清楚、更容易获得高质量回答的问题。
+知乎 AI 提问编译器：把模糊需求整理成更清楚、更完整、更容易获得高质量回答的问题。
 
-> 核心定位：面向问题端的 Query Understanding + Intent Clarification + Question Compiler。AI 不只回答问题，也帮助人把问题问得更好。
+> 核心定位：**Query Understanding + Intent Clarification + Question Compiler**。AI 不只回答问题，也帮助用户把问题问得更好。
 
-## 当前状态
+## 在线体验与 Android 下载
 
-仓库已经从 Mock 原型切换为 **真实服务端 Pipeline**。配置服务端 Secret 后，Web 主流程会实际执行：
+- Web：<https://ask.wulisu.icu>
+- Android Release：<https://github.com/wulisususu/sdaa/releases/tag/v0.1.0-preview>
+- Android APK：<https://github.com/wulisususu/sdaa/releases/download/v0.1.0-preview/ask-better-competition-release.apk>
 
-1. **Analyze**：识别意图、缺失信息和 Question Lint，并生成 2–4 个高信息增益追问。
-2. **Clarify**：用户自行补充会改变答案的关键条件。
-3. **Retrieve / Coverage**：通过知乎开放平台 `zhihu_search` 检索已有讨论，再基于真实 Evidence 判断 Existing Coverage 与 Knowledge Gap。
-4. **Compile**：把原问题、用户明确补充的条件和检索上下文编译成结构化 Question Package。
-5. **Result**：支持复制结果或打开知乎提问页，由用户最终确认和发布。
+Android 包名：`icu.wulisu.askbetter`
 
-生产 UI 不再使用 Mock 数据作为成功回退。没有配置外部服务、知乎额度受限或上游暂时不可用时，界面会明确显示错误或 partial / unavailable 状态，而不是伪造“已有讨论”。
+当前公开 APK：`v0.1.0-preview`
 
-## 公网体验
+SHA-256：
 
-Production: `https://ask.wulisu.icu`
+```text
+b64dabec8c31d6f84160f7b252dbcb0afacbddf95ba27908b71f44f67ceeb021
+```
 
-当前 P0 部署在 Linux 自托管环境（Ubuntu 24.04），而不是 Vercel：
+> Android 版本是现有 Web 产品的轻量 WebView Shell，不在 APK 内重新实现业务 Pipeline，也不会把知乎 Access Secret、LLM API Key 或 Redis Token 打包进客户端。
 
-- Web / API：Next.js 16 由 systemd 托管，只监听 `127.0.0.1:3100`，不直接暴露公网
-- 反向代理：Nginx 终止 HTTPS（certbot 证书），对外只开放 80/443
-- LLM：DeepSeek `deepseek-v4-flash`（`https://api.deepseek.com`）
-- 检索：知乎官方开放平台 `zhihu_search`
-- 生产 Secret 只存在于服务器 `/etc/ask-better/ask-better.env`（权限 600），不进入仓库、前端 Bundle、日志或接口响应
+## 产品流程
 
-当知乎上游返回 `30001 rate limit exceeded` 时，Retrieve 进入 `quota_limited`，只保留已经取得的真实 Evidence，不会回退到演示数据。
+生产版本已经接入真实服务端 Pipeline：
 
-### Production Smoke
+1. **Analyze**：识别意图、缺失信息和 Question Lint，并生成高信息增益追问。
+2. **Clarify**：补充真正会改变答案的关键条件。
+3. **Retrieve / Coverage**：通过知乎开放平台检索已有讨论，并分析 Existing Coverage 与 Knowledge Gap。
+4. **Diagnose**：帮助用户理解当前问题的结构、缺口与改进方向。
+5. **Compile / Result**：把原问题、明确补充条件和检索上下文编译成结构化 Question Package，支持复制结果和打开知乎提问页。
 
-Smoke Harness 只调用公网 `/api/question/*`，不读取任何 Secret：
+Web 端保留同一套 Question Session：Input / Clarify / Diagnose / Coverage / Result 稳定状态会本地持久化；刷新、重新打开页面或 Android App 后可以恢复当前问题流程，不会创建第二套移动端 Session。
+
+## Android 客户端
+
+Android 客户端位于 `apps/mobile`，基于 Expo + React Native WebView，仅加载：
+
+```text
+https://ask.wulisu.icu
+```
+
+导航策略：
+
+- 同源 `https://ask.wulisu.icu` 留在 App 内；
+- 其它 `http(s)`、`mailto:`、`tel:` 交给系统外部应用；
+- `javascript:`、`data:`、畸形 URL 和不支持的 scheme 会被阻止；
+- `打开知乎` 会跳转到系统浏览器；
+- WebView Clipboard 已通过 Android 行为验收，不需要额外 native clipboard bridge。
+
+### 安装 APK
+
+从 Releases 下载：
+
+```text
+ask-better-competition-release.apk
+```
+
+ADB 安装：
 
 ```bash
-SMOKE_BASE_URL=https://ask.wulisu.icu pnpm smoke:production -- "现在转码还有前途吗？"
+adb install -r ask-better-competition-release.apk
 ```
 
-PowerShell：
+该 release APK 已完成 Android 35 standalone 冷启动验证，不依赖 Metro 开发服务器。
 
-```powershell
-$env:SMOKE_BASE_URL = "https://ask.wulisu.icu"
-pnpm smoke:production -- "现在转码还有前途吗？"
+### Android 本地开发
+
+需要：Node.js 22+、Corepack / pnpm、JDK 17、Android Studio / Android SDK、`adb`。
+
+```bash
+corepack enable
+pnpm install
+pnpm --filter mobile test
+pnpm --filter mobile typecheck
+pnpm --filter mobile android
 ```
+
+生成 preview APK 可使用 EAS：
+
+```bash
+cd apps/mobile
+eas build --platform android --profile preview
+```
+
+`apps/mobile/package.json` 故意不定义 `build` script，因此根目录 `pnpm build` 不会调用 Gradle，也不会要求 Android SDK。
+
+## 公网部署
+
+当前生产环境部署在 Linux 自托管服务器（Ubuntu 24.04）：
+
+- Web / API：Next.js 16 + systemd，仅监听 `127.0.0.1:3100`
+- 反向代理：Nginx + HTTPS
+- LLM：OpenAI-compatible provider
+- 检索：知乎官方开放平台 `zhihu_search`
+- 可选缓存：Upstash Redis / Memory Cache fallback
+
+生产 UI 不使用 Mock 数据作为成功回退。外部服务不可用、额度受限或只返回部分 Evidence 时，会进入明确的 `partial` / `quota_limited` / `unavailable` 状态，而不是伪造检索结果。
 
 ## 服务端集成
 
-### 1. OpenAI-compatible LLM
+### LLM
 
-通过以下服务端环境变量配置：
+服务端环境变量：
 
-- `LLM_BASE_URL`
-- `LLM_API_KEY`
-- `LLM_MODEL`
+```env
+LLM_BASE_URL=
+LLM_API_KEY=
+LLM_MODEL=
+```
 
-业务代码不根据模型厂商分支。LLM 的结构化输出进入 Domain/UI 前会再次通过 Zod 校验。
+### 知乎开放平台
 
-### 2. 知乎开放平台搜索
+P0 使用知乎官方搜索能力：
 
-P0 使用知乎官方 HTTP 搜索能力：
+```text
+GET /api/v1/content/zhihu_search
+```
 
-- `GET /api/v1/content/zhihu_search`
-- Bearer Access Secret
-- `X-Request-Timestamp` 秒级 Unix 时间戳
+鉴权 Secret 仅保存在服务端。
 
-Access Secret 仅存在于服务端。浏览器不会收到知乎 Secret、LLM API Key 或 Redis Token。
+### 可选 Redis
 
-检索层会生成 1–3 个查询、限制单次结果数量、缓存重复查询、归一化并去重真实 Evidence。Coverage / Gap 结论只描述“本次检索证据覆盖了什么、较少覆盖什么”，不会据此声称整个知乎都没有相关讨论。
+```env
+UPSTASH_REDIS_REST_URL=
+UPSTASH_REDIS_REST_TOKEN=
+```
 
-### 3. 可选 Upstash Redis Cache
+Redis 不作为正确性依赖；缓存不可用时会降级到直接调用上游搜索。
 
-如果配置：
+## 安全边界
 
-- `UPSTASH_REDIS_REST_URL`
-- `UPSTASH_REDIS_REST_TOKEN`
-
-服务会使用 Upstash REST 缓存知乎搜索结果以保护调用额度。未配置时使用进程内 Memory Cache；Redis 出现故障时会降级为直接调用官方搜索，不把缓存当作正确性依赖。
-
-## Partial-success 行为
-
-真实外部依赖不保证永远可用，因此 Retrieve 阶段有明确状态：
-
-- `success`：已拿到检索结果并完成 Coverage / Gap 分析。
-- `partial`：已拿到部分真实 Evidence，但后续分析不完整；仍可继续编译。
-- `quota_limited`：知乎检索额度暂时受限；只展示已经获得的内容。
-- `unavailable`：本次没有可用的知乎 Evidence；仍可仅基于用户输入继续整理问题。
-
-最终 Compile 结果会标记本次是否实际使用了知乎 Evidence。
-
-### Local question-session recovery
-
-The Web app keeps the current question workflow in a versioned local-first session store:
-
-- every non-empty question receives a stable `conversationId`;
-- Input / Clarify / Diagnose / Coverage / Result stable state is autosaved locally;
-- refresh or returning to `ask.wulisu.icu` restores the active stable stage without replaying completed API calls;
-- pending Analyze / Retrieve / Compile operations are never restored as loading states;
-- the latest 20 question sessions are available from Recent History;
-- the previous `ask-better:completed-session:v1` completed result is migrated to V2 once when valid.
-
-This remains browser-local. OAuth/account sync and cross-device history are outside the current scope.
-
-## 安全与产品边界
-
-- Question Compiler **不得替用户编造个人背景或约束条件**。最终问题中的用户事实只能来自原始输入和用户明确选择/补充的信息。
-- P0 不依赖 OAuth、收藏/关注等用户数据，也不自动代用户发布问题。
-- 当前官方 Skill 未将“直接创建/发布问题”作为稳定 P0 写接口，因此结果页只提供复制与打开知乎提问页，最终发布动作由用户确认。
-- OAuth 变量仅为 P1 预留，不阻塞游客主流程。
+- Question Compiler 不替用户编造个人背景或约束条件；
+- 用户事实只来自原始输入和用户明确补充内容；
+- 不自动代用户发布知乎问题；
+- 知乎 Access Secret、LLM API Key、Redis Token 只存在于服务端；
+- Android 只持有公开生产 URL；
+- `apps/mobile/android/` 由 Expo CNG / prebuild 生成并保持 Git ignored；
+- APK 已做敏感服务端变量扫描。
 
 ## 本地开发
 
-要求 Node.js 22+，使用 pnpm/Corepack。
+要求 Node.js 22+，使用 pnpm/Corepack：
 
 ```bash
 corepack enable
@@ -120,7 +151,7 @@ cp .env.example .env.local
 pnpm dev
 ```
 
-Windows PowerShell 可用：
+Windows PowerShell：
 
 ```powershell
 corepack enable
@@ -129,9 +160,7 @@ Copy-Item .env.example .env.local
 pnpm dev
 ```
 
-然后只在本地 `.env.local` 或部署平台 Secret Store 中填写真实凭据。不要把真实 Access Secret / API Key 提交到 GitHub。
-
-最小 P0 配置：
+最小服务端配置：
 
 ```env
 ZHIHU_API_BASE_URL=https://developer.zhihu.com
@@ -141,52 +170,35 @@ LLM_API_KEY=
 LLM_MODEL=
 ```
 
-Upstash 为可选项；P1 OAuth 也不是主流程必需项。完整变量见 `.env.example`。
-
-## Android WebView 客户端
-
-Android 客户端位于 `apps/mobile`，使用 Expo + React Native WebView 加载现有生产站 `https://ask.wulisu.icu`。Question Compiler、Question Session 与 `/api/question/*` 仍由现有 Web / Server 负责；APK 不重新实现 Analyze / Clarify / Diagnose / Coverage / Result，也不创建第二套 Question Session。
-
-本地运行前需要 Node.js 22+、Corepack / pnpm、JDK 17、Android Studio / Android SDK 和 `adb`：
-
-```bash
-corepack enable
-pnpm install
-pnpm --filter mobile android
-```
-
-可安装 preview APK 使用 EAS 的 `preview` profile：
-
-```bash
-cd apps/mobile
-eas build --platform android --profile preview
-```
-
-EAS 构建需要对应 Expo / EAS 项目权限。签名凭据只保存在本地或 EAS，不进入 Git。
-
-Android 安全边界：
-
-- Shell 只加载 `https://ask.wulisu.icu`；
-- `apps/mobile/.env.example` 只包含公开的 `EXPO_PUBLIC_ASK_BETTER_URL=https://ask.wulisu.icu`；
-- 知乎 Access Secret、LLM API Key、Redis Token 始终只在服务端，不进入 `EXPO_PUBLIC_*`、移动端源码或 APK；
-- `apps/mobile/android/` 由 Expo CNG / prebuild 生成并保持 Git ignored；
-- `apps/mobile/package.json` 故意不定义 `build`，因此根目录 `pnpm build` 不会要求 Android SDK 或启动 Gradle。
+不要把真实 Secret 提交到 GitHub。
 
 ## 验证
 
 ```bash
+pnpm install --frozen-lockfile
 pnpm --filter @ask-better/domain test
 pnpm --filter @ask-better/domain typecheck
 pnpm --filter web test
 pnpm --filter web typecheck
 pnpm --filter web build
+pnpm --filter mobile test
+pnpm --filter mobile typecheck
+pnpm build
 ```
 
-测试通过 dependency injection / fixture 验证 LLM、知乎 HTTP、缓存和服务层，不会在 CI 中消费真实知乎额度或调用真实 LLM。
+当前 Android shell 最终回归：
+
+- Web：203 tests passed
+- Domain：18 tests passed
+- Mobile：18 tests passed
+- Web production build：passed
+- Root build：Android-SDK-independent
+- Android 35：完整业务流程、Session 恢复、外链、Clipboard、standalone 冷启动均通过
 
 ## 技术栈
 
 - Next.js 16 App Router + React 19 + TypeScript
+- Expo + React Native + React Native WebView
 - pnpm + Turborepo
 - Zod runtime contracts
 - Vercel AI SDK + OpenAI-compatible provider
@@ -196,8 +208,9 @@ pnpm --filter web build
 
 ## 文档
 
-- `docs/PRD.md`：Master PRD v2.0
+- `docs/PRD.md`：Master PRD
 - `docs/ARCHITECTURE.md`：总体技术架构
 - `docs/ZHIHU_INTEGRATION.md`：知乎官方能力、鉴权、缓存与降级边界
 - `docs/FRONTEND_SPEC.md`：Web UI 与响应式规范
-- `docs/superpowers/plans/2026-09-12-core-pipeline.md`：当前真实 Pipeline 实施计划
+- `docs/superpowers/plans/2026-09-14-android-webview-shell-design.md`：Android Shell 设计
+- `docs/superpowers/plans/2026-09-14-android-webview-shell.md`：Android Shell 实施计划
