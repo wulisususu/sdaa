@@ -8,6 +8,7 @@ coverage
 .env.*.local
 *.log
 .DS_Store
+.turbo/
 
 # Verification captures (viewport / transition evidence), not product artifacts
 shots
@@ -15,3 +16,12 @@ shots
 # typescript / next generated
 next-env.d.ts
 *.tsbuildinfo
+
+# Expo / Android generated
+apps/mobile/.expo/
+apps/mobile/android/
+apps/mobile/.env
+apps/mobile/.env.local
+apps/mobile/.env.*.local
+apps/mobile/*.jks
+apps/mobile/*.keystore
