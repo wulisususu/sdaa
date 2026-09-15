@@ -143,6 +143,35 @@ LLM_MODEL=
 
 Upstash 为可选项；P1 OAuth 也不是主流程必需项。完整变量见 `.env.example`。
 
+## Android WebView 客户端
+
+Android 客户端位于 `apps/mobile`，使用 Expo + React Native WebView 加载现有生产站 `https://ask.wulisu.icu`。Question Compiler、Question Session 与 `/api/question/*` 仍由现有 Web / Server 负责；APK 不重新实现 Analyze / Clarify / Diagnose / Coverage / Result，也不创建第二套 Question Session。
+
+本地运行前需要 Node.js 22+、Corepack / pnpm、JDK 17、Android Studio / Android SDK 和 `adb`：
+
+```bash
+corepack enable
+pnpm install
+pnpm --filter mobile android
+```
+
+可安装 preview APK 使用 EAS 的 `preview` profile：
+
+```bash
+cd apps/mobile
+eas build --platform android --profile preview
+```
+
+EAS 构建需要对应 Expo / EAS 项目权限。签名凭据只保存在本地或 EAS，不进入 Git。
+
+Android 安全边界：
+
+- Shell 只加载 `https://ask.wulisu.icu`；
+- `apps/mobile/.env.example` 只包含公开的 `EXPO_PUBLIC_ASK_BETTER_URL=https://ask.wulisu.icu`；
+- 知乎 Access Secret、LLM API Key、Redis Token 始终只在服务端，不进入 `EXPO_PUBLIC_*`、移动端源码或 APK；
+- `apps/mobile/android/` 由 Expo CNG / prebuild 生成并保持 Git ignored；
+- `apps/mobile/package.json` 故意不定义 `build`，因此根目录 `pnpm build` 不会要求 Android SDK 或启动 Gradle。
+
 ## 验证
 
 ```bash
