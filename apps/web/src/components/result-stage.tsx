@@ -1,5 +1,6 @@
 import type { CompiledQuestion, PublishableQuestion } from "@ask-better/domain";
 import { CompiledQuestionPanel } from "./compiled-question-panel";
+import styles from "./result-stage.module.css";
 
 interface ResultStageProps {
   rawQuestion: string;
@@ -14,6 +15,22 @@ interface ResultStageProps {
   onOpenZhihu: () => void;
 }
 
+/**
+ * The Result screen: one white panel containing the whole result, in reading order —
+ * heading, status, warnings, the `original -> publishable` comparison, then the compiled details and
+ * the four actions.
+ *
+ * The composition used to be three surfaces (`Before` card, a `Compile ->` bridge, and the compiled
+ * workspace panel) stacked on the scene backdrop, so the backdrop was visible between them and the
+ * stage read as three screens. The bridge is gone, the cards are de-chromed by
+ * `result-stage.module.css`, and one `.flow-card` now carries the surface. Class names like
+ * `.before-card` and `.compiled-panel-body` survive because `globals.css` and `scene-contrast.css`
+ * anchor real rules to them; only the chrome is neutralised.
+ *
+ * `evidenceUsed` stays a required prop and is still forwarded: the two render sites that used it were
+ * removed with the old composition, and the badge inside `CompiledQuestionPanel` is what carries the
+ * semantics now.
+ */
 export function ResultStage({
   rawQuestion,
   question,
@@ -27,65 +44,78 @@ export function ResultStage({
   onOpenZhihu
 }: ResultStageProps) {
   return (
-    <section className="flow-stage flow-stage-wide result-stage">
-      <div className="flow-heading stage-section-heading">
-        <div>
-          <span className="section-kicker">05 / 05 · COMPILED</span>
-          <h2 data-motion="headline">这个问题现在可以拿去问了</h2>
-          <small>Before → After</small>
-        </div>
-      </div>
-
-      <div className="result-status" role="status">
-        <span className="result-check" aria-hidden="true">✓</span>
-        <div className="result-status-copy">
-          <strong>问题已编译完成</strong>
-          <small>Question successfully compiled</small>
-        </div>
-        <span className={`result-provenance ${evidenceUsed ? "has-evidence" : ""}`}>
-          {evidenceUsed ? "已参考本次知乎 Evidence" : "仅基于用户提供的信息"}
-        </span>
-      </div>
-
-      <p className="result-evidence-note">
-        {evidenceUsed
-          ? "知乎检索结果只用于判断已有覆盖与知识缺口；你的个人背景和约束仍只来自你自己提供的信息。"
-          : "本次编译未使用知乎检索证据，结果仅基于你提供的问题与补充条件。"}
-      </p>
-
-      {warnings.length > 0 && (
-        <div className="result-warning-list" role="status">
-          {warnings.map((warning) => <p key={warning}>{warning}</p>)}
-        </div>
-      )}
-
-      <div className="before-after-grid">
-        <article className="before-card" data-motion="before">
-          <div className="flow-heading">
-            <div>
-              <span className="section-kicker">Before</span>
-              <h2>你一开始的问题</h2>
+    <section
+      className={`flow-stage flow-stage-wide result-stage ${styles.resultStage}`}
+      data-result-stage="true"
+    >
+      <div className={`flow-card ${styles.resultPanel}`} data-result-panel="true">
+        <div
+          className={`flow-heading stage-section-heading ${styles.resultHeader}`}
+          data-result-heading="true"
+        >
+          <div>
+            <span className="section-kicker">05 / 05 · COMPILED</span>
+            <h2 data-motion="headline">这个问题现在可以拿去问了</h2>
+            <small>Original → Publishable</small>
+          </div>
+          <div className={`result-status ${styles.statusLine}`} role="status" data-result-status="true">
+            <span className="result-check" aria-hidden="true">✓</span>
+            <div className="result-status-copy">
+              <strong>问题已编译完成</strong>
+              <small>Question successfully compiled</small>
             </div>
           </div>
-          <blockquote>{rawQuestion}</blockquote>
-          <div className="before-card-caption">原始表达保持不变，用来直观看见这次“编译”补充了什么。</div>
-        </article>
-
-        <div className="compile-bridge" aria-hidden="true">
-          <span>Compile</span>
-          <strong>→</strong>
         </div>
 
-        <CompiledQuestionPanel
-          question={question}
-          publishableQuestion={publishableQuestion}
-          evidenceUsed={evidenceUsed}
-          copyStatus={copyStatus}
-          onCopy={onCopy}
-          onReoptimize={onReoptimize}
-          onNewQuestion={onNewQuestion}
-          onOpenZhihu={onOpenZhihu}
-        />
+        {warnings.length > 0 && (
+          <div
+            className={`result-warning-list ${styles.resultWarnings}`}
+            role="status"
+            data-result-warnings="true"
+          >
+            {warnings.map((warning) => <p key={warning}>{warning}</p>)}
+          </div>
+        )}
+
+        {/* Bounded container only: the publishable column inside it is the single scroll owner. */}
+        <div className={styles.resultBody} data-result-body="true">
+          <div
+            className={`before-after-grid ${styles.comparison}`}
+            data-result-comparison="true"
+          >
+            <article
+              className={`before-card ${styles.originalColumn}`}
+              data-motion="before"
+              data-result-original="true"
+            >
+              <div className={`flow-heading ${styles.columnHeading}`}>
+                <div>
+                  <span className="section-kicker">Before</span>
+                  <h2>你一开始的问题</h2>
+                </div>
+              </div>
+              <blockquote tabIndex={0} aria-label="你一开始的问题">{rawQuestion}</blockquote>
+            </article>
+
+            <div className={styles.publishColumn} data-result-publishable="true">
+              <div className={`flow-heading ${styles.publishHeading}`} data-motion="after">
+                <div>
+                  <h2>知乎可发布版本</h2>
+                </div>
+              </div>
+              <CompiledQuestionPanel
+                question={question}
+                publishableQuestion={publishableQuestion}
+                evidenceUsed={evidenceUsed}
+                copyStatus={copyStatus}
+                onCopy={onCopy}
+                onReoptimize={onReoptimize}
+                onNewQuestion={onNewQuestion}
+                onOpenZhihu={onOpenZhihu}
+              />
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   );

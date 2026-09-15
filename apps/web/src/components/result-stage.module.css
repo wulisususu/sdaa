@@ -1,0 +1,447 @@
+/*
+ * Result-stage composition: ONE white panel per screen, with the long content scrolling inside the
+ * panel and the four actions pinned to the panel's bottom edge.
+ *
+ * Why this module exists at all: `globals.css` composes the Result stage as a vertical stack of
+ * separate surfaces (`Before` card -> compile bridge -> compiled workspace panel), each with its own
+ * background, border and shadow. Between those surfaces the dark scene backdrop is visible, so the
+ * stage reads as three screens rather than one result. The fix is a single `.flow-card` surface whose
+ * children lose their card chrome (`background: transparent; border: 0; box-shadow: none`) instead of
+ * losing their class names — the class names are load-bearing for `scene-contrast.css` and for the
+ * assertions in `stage-transition-viewport.test.tsx`.
+ *
+ * Every rule below is either scoped to the result stage canvas or neutralises chrome for the result
+ *  * Every rule below is either scoped to the result stage canvas or neutralises chrome for the result
+ * stage only. Nothing here may be scoped by a transition role (stable/outgoing/incoming): those
+ * canvases must share identical box metrics or the scene jumps vertically mid-handoff.
+ */
+
+/* ---------------------------------------------------------------------------------------------
+ * Geometry-independent de-chroming. These apply at every width, because "one white panel" is a
+ * composition rule rather than a viewport rule: on a phone the columns stack, but the original
+ * question and the publishable version must still read as one result on one surface.
+ * ------------------------------------------------------------------------------------------- */
+
+.resultStage{
+  min-width: 0;
+  min-height: 0;
+}
+
+/* The single white surface. `globals.css` `.flow-card` supplies the background/border/radius/shadow;
+   only the padding and the flex sizing are set here, so the stage can hand the panel the whole
+   height budget and the panel can hand the leftover to the scroll region. */
+.resultPanel{
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.resultHeader{
+  flex: 0 0 auto;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+/* The status line was a full-width card of its own; inside the unified panel it is a compact chip
+   next to the heading. Color still carries the "compiled" signal, but no longer a second surface. */
+.statusLine{
+  flex: 0 0 auto;
+  margin-left: auto;
+  min-height: 0;
+  padding: 8px 12px;
+  gap: 10px;
+  border-radius: 12px;
+  box-shadow: none;
+}
+
+/* ---- comparison ------------------------------------------------------------------------------ */
+
+.resultBody{
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Overrides the `before-after-grid` 3-column template from globals.css (minmax(240px, .72fr) 62px
+   minmax(0, 1.35fr)) which reserved a 62px middle column for the compile bridge. The bridge is gone,
+   so the template becomes two columns and the separation is drawn by the divider rule instead of by
+   a gap the backdrop could show through. */
+.comparison{
+  display: grid;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  gap: 12px;
+  align-items: start;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* Both `before-card` and `workspace-panel`/`compiled-panel` draw a card (background, border, radius,
+   shadow) because `globals.css` lists them together in the shared stage-surface rule. Keeping the
+   class names while dropping the chrome is what turns three cards into two columns of one panel. */
+.originalColumn,
+.publishColumn,
+.publishColumn :global(.compiled-panel){
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.originalColumn{
+  padding-right: 18px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* `globals.css` plays `result-before-dim` on `[data-motion="before"]` with fill-mode `both`, which
+   would freeze this column at `opacity: 0.38; transform: scale(0.94)` — the intended "ghost before"
+   look for the old three-card layout. Inside one unified panel a permanently dimmed, shrunken
+   column reads as a rendering bug, and its 6% shrink pulls the divider off the column join, so both
+   sections are equal peers here; the hook survives for the tests that assert it. */
+.originalColumn[data-motion="before"]{
+  animation: none;
+}
+
+.publishColumn{
+  position: relative;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* `Before` keeps its own hierarchy inside the shared panel, but at column scale rather than hero
+   scale: `globals.css` styles `.before-card blockquote` at `clamp(20px, 2vw, 27px)`, which is a
+   full-screen question, not a column. */
+.columnHeading,
+.publishHeading{
+  flex: 0 0 auto;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.originalColumn :global(blockquote){
+  margin: 0;
+  padding: 4px 0 0;
+  color: var(--text-primary);
+  font-size: 15px;
+  font-weight: 650;
+  line-height: 1.5;
+  letter-spacing: 0;
+}
+
+/* `globals.css` `.panel-content{padding:16px}` would indent the publishable block inside a column of
+   the same panel. */
+.publishColumn :global(.panel-content){
+  padding: 0;
+}
+
+/* `compiled-question-panel.tsx` returns one fragment of three elements, so `ResultStage` cannot wrap
+   its parts without adding a surface of its own. The fragments are addressed by class instead: the
+   labelled scroll region fills the column, the compiled details sit between it and the footer, and
+   the footer holds the evidence badge plus the four actions. */
+.publishColumn > :global(.panel-content){
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  overscroll-behavior: contain;
+}
+
+.publishColumn > :global(.result-footer){
+  flex: 0 0 auto;
+  margin-top: 8px;
+}
+
+.result-evidence-badge{
+  margin-bottom: 8px;
+}
+
+/* `.compiled-card` is a second card inside the panel (border + gradient). The publishable title keeps
+   its emphasis through type scale instead. */
+.publishColumn :global(.compiled-card){
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+}
+
+.publishColumn :global(.compiled-card h3){
+  margin: 2px 0 6px;
+  color: var(--text-primary);
+  font-size: 17px;
+  line-height: 1.45;
+}
+
+/* `.compiled-panel-body` is a grid whose only in-column child is the publishable block, so the 12px
+   grid gap is empty space in a bounded column. */
+.publishColumn :global(.compiled-panel-body){
+  display: block;
+  min-width: 0;
+}
+
+/* The whole publishable column is one scroll region (see the >=1024px block), so the inner
+   peek-hole's own `overflow` would give the column two competing scrollbars. */
+.publishColumn :global(.compiled-publishable-scroll){
+  overflow: visible;
+}
+
+/* ---- compiled details + action footer ------------------------------------------------------- */
+
+/* The details block is closed by default, so its top rule is what separates the publishable content
+   from the Question IR affordance below it. */
+.publishColumn > :global(.compiler-details){
+  flex: 0 0 auto;
+  margin-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+/* The compiled details add their own top borders, which would double the rule drawn above them. */
+.publishColumn :global(.compiler-details) :global(.compiled-details) :global(div):first-child,
+.publishColumn :global(.compiler-details) :global(.expected-answer-block){
+  border-top: 0;
+}
+
+/* `globals.css` `.action-row{margin-top:14px}` would push the pinned actions away from the panel
+   edge they belong to. */
+.publishColumn :global(.compiled-actions){
+  margin-top: 0;
+}
+
+/* ---------------------------------------------------------------------------------------------
+ * Bounded one-viewport layout.
+ *
+ * 1024px is the narrowest desktop width the Result stage must keep to a single viewport, so the
+ * bounded layout starts there. Below it the scene canvas keeps its ordinary vertical page scroll,
+ * the two columns stack, and the actions stay reachable through the existing `.mobile-sticky-actions`
+ * behaviour.
+ *
+ * The definite-row declaration on the safe frame is load-bearing, not cosmetic. `globals.css` lays
+ * the frame out as `display: grid; grid-template-rows: min-content; align-content: start`, and a
+ * `min-content` row is indefinite — so `height: 100%` on `.scene-content`, and therefore every
+ * `height: 100%` below it, silently resolves to `auto`. That is why the scoped `overflow-y: auto` on
+ * `.compiled-panel-body` never engaged, why `.compiled-publishable-scroll`'s `min(46dvh, 430px)`
+ * budget fired ~60px after the real budget was already gone, and why the scene grew its own outer
+ * scrollbar. `minmax(0, 1fr)` makes the row definite *and* shrinkable, and the overflow then lands in
+ * the panel's scroll region where it belongs.
+ *
+ * The canvas keeps `overflow-y: auto` from globals.css on purpose: if the geometry ever regresses the
+ * worst case is a visible scrollbar, not an unreachable action.
+ * ------------------------------------------------------------------------------------------- */
+@media (min-width: 1024px){
+  :global(.scene-canvas[data-stage="result"] .scene-safe-frame){
+    height: 100%;
+    min-height: 0;
+    grid-template-rows: minmax(0, 1fr);
+    align-content: stretch;
+  }
+
+  :global(.scene-canvas[data-stage="result"] .scene-content){
+    height: 100%;
+    min-height: 0;
+  }
+
+  /* Keep overflow inside the stage: the scene canvas already scrolls, and a second overflowing box
+     here would put two scrollbars on the same screen. */
+  :global(.scene-canvas[data-stage="result"] .scene-content > .flow-stage-wide){
+    overflow: hidden;
+  }
+
+  .resultPanel{
+    flex: 1 1 auto;
+    /* The panel owns the remaining height; its children decide what scrolls inside it. */
+    overflow: hidden;
+  }
+
+  /* Grows into the space left by the heading, the status line and the warnings, without itself
+     scrolling — the publishable column inside it is the single scroll owner. */
+  :global(.scene-canvas[data-stage="result"]) .resultBody{
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  :global(.scene-canvas[data-stage="result"]) .comparison{
+    flex: 1 1 auto;
+    min-height: 0;
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+    grid-template-rows: minmax(0, 1fr);
+    gap: 0;
+    align-items: stretch;
+  }
+
+  /* The vertical 1px divider between "you first asked" and "publishable version". It is a
+     pseudo-element rather than a grid column so that the two columns share one box model: a real
+     divider element would have to be re-declared in the fragment that compiled-question-panel.tsx
+     returns, and it would reintroduce the middle column that made the Result look like two cards. */
+  :global(.scene-canvas[data-stage="result"]) .publishColumn::before{
+    content: "";
+    position: absolute;
+    inset-block: 0;
+    left: 0;
+    width: 1px;
+    background: var(--border);
+  }
+
+  /* THE scroll owner. Long publishable text, the compiled details and the action row all live in this
+     column, so bounding the column keeps all three reachable: the column scrolls, the actions sit at
+     its end, and nothing is pushed onto a second screen. Focusing it (tabIndex in the JSX) enables
+     native Arrow/Page/Home/End scrolling without a key listener. */
+  :global(.scene-canvas[data-stage="result"]) .publishColumn{
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  :global(.scene-canvas[data-stage="result"]) .publishColumn::-webkit-scrollbar{
+    width: 0;
+    height: 0;
+    display: none;
+  }
+
+  :global(.scene-canvas[data-stage="result"]) .publishColumn:focus-visible{
+    outline: 2px solid var(--focus-ring);
+    outline-offset: -2px;
+  }
+
+  /* The footer is sticky inside the scrolling column, so the four actions stay on screen no matter
+     how long the publishable text is: `bottom: 0` pins them to the column's scrollport and the
+     opaque background stops scrolled content from showing through behind them. Below 1024px the
+     column is not the scroller (the canvas page-scrolls), so sticky is not needed there. */
+  :global(.scene-canvas[data-stage="result"]) .publishColumn > :global(.result-footer){
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    margin-left: -18px;
+    padding: 10px 0 0 18px;
+    background: #fff;
+    border-top: 1px solid var(--border);
+  }
+
+  /* Neutralise the viewport-relative peek-hole: `min(46dvh, 430px)` is a budget for the whole
+     viewport, so inside a bounded column it overflows the column before it scrolls. */
+  :global(.scene-canvas[data-stage="result"] .compiled-publishable-scroll){
+    max-height: none;
+    overflow: visible;
+  }
+
+  /* Long original questions scroll inside their own column instead of growing the panel. This is the
+     secondary focusable scroller; the primary one is the publishable column above. */
+  :global(.scene-canvas[data-stage="result"]) .originalColumn{
+    flex: 1 1 auto;
+    overflow: hidden;
+  }
+
+  /* A long warning list must not push the comparison out of the panel, but warnings are important
+     enough that they may not collapse below a readable height either. */
+  :global(.scene-canvas[data-stage="result"]) .resultWarnings{
+    flex: 0 1 auto;
+    min-height: 0;
+    max-height: min(16dvh, 120px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: none;
+  }
+
+  :global(.scene-canvas[data-stage="result"]) .resultWarnings::-webkit-scrollbar{
+    width: 0;
+    height: 0;
+    display: none;
+  }
+}
+
+/*
+ * Tall desktop viewports: the original question gets its own scroll window instead of being cut off.
+ * ≤940px tall keeps the existing two-line clamp from globals.css, which is deliberate: with that
+ * little height the clamp shows the shape of the original question without stealing the budget the
+ * publishable version needs.
+ */
+@media (min-width: 1024px) and (min-height: 941px){
+  :global(.scene-canvas[data-stage="result"]) .originalColumn :global(blockquote){
+    flex: 1 1 auto;
+    min-height: 0;
+    display: block;
+    -webkit-line-clamp: none;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  :global(.scene-canvas[data-stage="result"]) .originalColumn :global(blockquote)::-webkit-scrollbar{
+    width: 0;
+    height: 0;
+    display: none;
+  }
+
+  :global(.scene-canvas[data-stage="result"]) .originalColumn :global(blockquote):focus-visible{
+    outline: 2px solid var(--focus-ring);
+    outline-offset: -2px;
+  }
+}
+
+/*
+ * Stacked layout. The columns become one column and the vertical divider becomes the horizontal rule
+ * that separates the original question from the publishable version. No bounded height is declared
+ * here on purpose: below 1024px the scene canvas scrolls normally and `.mobile-sticky-actions` keeps
+ * the CTA reachable.
+ */
+@media (max-width: 1023px){
+  :global(.scene-canvas[data-stage="result"]) .comparison{
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  :global(.scene-canvas[data-stage="result"]) .publishColumn{
+    border-top: 1px solid var(--border);
+    margin-top: 14px;
+    padding-top: 14px;
+  }
+
+  .originalColumn{
+    padding-right: 0;
+  }
+
+  .publishColumn{
+    padding-left: 0;
+    position: static;
+  }
+}
+
+/*
+ * Compact desktop heights (1366x768 class): the panel header, the comparison and the actions have to
+ * share ~700px, so the column padding and the heading rhythm tighten up.
+ */
+@media (min-width: 1024px) and (max-height: 940px){
+  .resultPanel{
+    padding: 12px 16px;
+  }
+
+  .originalColumn{
+    padding-right: 14px;
+  }
+
+  .publishColumn{
+    padding-left: 14px;
+  }
+
+  .originalColumn :global(blockquote){
+    font-size: 13.5px;
+  }
+
+  .resultHeader{
+    margin-bottom: 8px;
+  }
+
+  .publishColumn :global(.compiled-card h3){
+    font-size: 15px;
+  }
+}
